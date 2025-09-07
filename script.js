@@ -6,6 +6,7 @@ const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-
 let currentChatId = null;
 let isGenerating = false;
 let chats = [];
+let userInfo = null;
 
 // Elementos del DOM
 const elements = {
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadChats();
     adjustTextareaHeight();
     handleInputChange();
+    loadUserInfo();
 });
 
 function setupEventListeners() {
@@ -62,6 +64,29 @@ function setupEventListeners() {
     elements.backBtn.addEventListener('click', closePreview);
     elements.downloadBtn.addEventListener('click', downloadCode);
     elements.shareBtn.addEventListener('click', shareCode);
+
+    const userInfoBtn = document.getElementById('userInfoBtn');
+    const userInfoModal = document.getElementById('userInfoModal');
+    const closeUserInfoModal = document.getElementById('closeUserInfoModal');
+    const userInfoForm = document.getElementById('userInfoForm');
+
+    if (userInfoBtn) {
+        userInfoBtn.addEventListener('click', () => {
+            showUserInfoModal();
+        });
+    }
+    if (closeUserInfoModal) {
+        closeUserInfoModal.addEventListener('click', () => {
+            hideUserInfoModal();
+        });
+    }
+    if (userInfoForm) {
+        userInfoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveUserInfo();
+            hideUserInfoModal();
+        });
+    }
 }
 
 function loadChats() {
@@ -294,6 +319,43 @@ function addMessage(type, content, generatedCode = null, save = true, messageId 
     return messageId;
 }
 
+// --- Datos de usuario ---
+function loadUserInfo() {
+    try {
+        const data = localStorage.getItem('devCenter_userInfo');
+        userInfo = data ? JSON.parse(data) : {};
+    } catch (e) {
+        userInfo = {};
+    }
+    setUserInfoForm();
+}
+function setUserInfoForm() {
+    if (!userInfo) return;
+    const name = document.getElementById('userName');
+    const birth = document.getElementById('userBirth');
+    const email = document.getElementById('userEmail');
+    const custom = document.getElementById('userCustom');
+    if (name) name.value = userInfo.name || '';
+    if (birth) birth.value = userInfo.birth || '';
+    if (email) email.value = userInfo.email || '';
+    if (custom) custom.value = userInfo.custom || '';
+}
+function showUserInfoModal() {
+    loadUserInfo();
+    document.getElementById('userInfoModal').style.display = 'flex';
+}
+function hideUserInfoModal() {
+    document.getElementById('userInfoModal').style.display = 'none';
+}
+function saveUserInfo() {
+    const name = document.getElementById('userName').value.trim();
+    const birth = document.getElementById('userBirth').value;
+    const email = document.getElementById('userEmail').value.trim();
+    const custom = document.getElementById('userCustom').value.trim();
+    userInfo = { name, birth, email, custom };
+    localStorage.setItem('devCenter_userInfo', JSON.stringify(userInfo));
+}
+
 // Entrada y envío
 function handleInputChange() {
     const hasText = elements.messageInput.value.trim().length > 0;
@@ -368,76 +430,62 @@ async function sendMessage() {
     handleInputChange();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // IA y generación de código
 async function generateWebpage(prompt) {
+    // Siempre recarga userInfo antes de generar el prompt
+    loadUserInfo();
+
+    // Obtener historial de mensajes del chat actual (solo texto, sin código generado)
+    const chat = getCurrentChat();
+    let historyText = '';
+    if (chat && chat.messages && chat.messages.length > 0) {
+        historyText = chat.messages
+            .filter(m => m.type === 'user' || m.type === 'ai')
+            .map(m => {
+                if (m.type === 'user') {
+                    return `Usuario: ${m.content}`;
+                } else if (m.type === 'ai') {
+                    // Solo incluir el mensaje, no el código generado
+                    return `DevCenter: ${m.content}`;
+                }
+                return '';
+            })
+            .join('\n');
+    }
+
+    // Información del usuario para IA
+    let userInfoText = '';
+    if (userInfo && (userInfo.name || userInfo.birth || userInfo.email || userInfo.custom)) {
+        userInfoText = [
+            userInfo.name ? `Nombre: ${userInfo.name}` : '',
+            userInfo.birth ? `Fecha de nacimiento: ${userInfo.birth}` : '',
+            userInfo.email ? `Correo: ${userInfo.email}` : '',
+            userInfo.custom ? `Información personalizada: ${userInfo.custom}` : ''
+        ].filter(Boolean).join('\n');
+    }
+
     const systemPrompt = `Eres DevCenter, un asistente de IA especializado en generar páginas web completas y funcionales.
 
 INSTRUCCIONES:
 - Genera código HTML completo con CSS integrado y JavaScript si es necesario
-- Usa diseños modernos, responsive y mobile-first optimizado para dispositivos móviles
-- Incluye Tailwind CSS desde CDN para estilos rápidos
+- Usa diseños moderno estilo neon responsive y optimizado para dispositivos móviles
 - El código debe ser funcional y listo para usar
 - Responde SOLO con el código HTML, sin explicaciones adicionales
-- Asegúrate de que el diseño sea atractivo y profesional con tema oscuro y colores negros
+- Asegúrate de que el diseño sea atractivo y profesional
 - Incluye meta tags apropiados y estructura semántica correcta
 - Diseño optimizado para pantallas pequeñas y touch
 - Usa español para todo el contenido de texto
-- Incluye contenido de ejemplo realista y relevante
+
+
+INFORMACIÓN DADA POR EL USUARIO:
+${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
+
+HISTORIAL DE MENSAJES:
+${historyText ? historyText : '(Sin historial previo)'}
 
 USUARIO SOLICITA: ${prompt}
 
 Genera el código HTML completo:`;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     try {
         const response = await fetch(`${API_URL}?key=${API_KEY}`, {
