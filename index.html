@@ -31,8 +31,14 @@
         <div class="sidebar-header">
             <h2>Historial de Chats</h2>
             <div style="display: flex; gap: 0.5rem;">
-                <button class="user-info-btn" id="userInfoBtn" title="Datos"><span
-                        class="user-info-emoji">💾</span></button>
+                <button class="user-info-btn" id="userInfoBtn" title="Datos">
+                    <span class="user-info-emoji">💾</span>
+                </button>
+                <span id="aiConfigBtnContainer" style="display:none;">
+                    <button class="user-info-btn" id="aiConfigBtn" title="Configurar IAs">
+                        <span class="user-info-emoji">🔧</span>
+                    </button>
+                </span>
                 <button class="close-btn" id="closeSidebarBtn">×</button>
             </div>
         </div>
@@ -106,6 +112,12 @@
                         </path>
                     </svg>
                 </button>
+                <button class="action-btn" id="copyCodeBtn" title="Copiar código" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
             </div>
         </div>
         <div class="preview-content">
@@ -135,6 +147,22 @@
                 <div style="margin-top:1rem;display:flex;gap:0.5rem;">
                     <button type="submit" class="action-btn" style="flex:1;">Guardar</button>
                     <button type="button" class="action-btn" id="closeUserInfoModal" style="flex:1;">Cerrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para configuración de IAs -->
+    <div class="ai-config-modal" id="aiConfigModal" style="display:none;">
+        <div class="ai-config-modal-content">
+            <h3>Configuración de IAs</h3>
+            <form id="aiConfigForm">
+                <div id="aiListContainer"></div>
+                <button type="button" class="action-btn" id="addAiBtn" style="margin:0.5rem 0 1rem 0;width:100%;">+
+                    Añadir IA</button>
+                <div style="display:flex;gap:0.5rem;">
+                    <button type="submit" class="action-btn" style="flex:1;">Guardar</button>
+                    <button type="button" class="action-btn" id="closeAiConfigModal" style="flex:1;">Cerrar</button>
                 </div>
             </form>
         </div>
