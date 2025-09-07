@@ -464,7 +464,7 @@ async function generateWebpage(prompt) {
         ].filter(Boolean).join('\n');
     }
 
-    const systemPrompt = `Eres DevCenter, un asistente de IA especializado en generar páginas web completas y funcionales.
+    const systemPrompt = `Tu Eres DevCenter IA, un asistente de IA especializado en generar páginas web completas y funcionales.
 
 INSTRUCCIONES:
 - Genera código HTML completo con CSS integrado y JavaScript si es necesario
