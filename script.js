@@ -6,8 +6,8 @@ const RESET_LIMIT_MINUTES = 30; // Tiempo en minutos para restablecer el límite
 // ===========================================================================
 
 // ================= CONFIGURACIÓN DE GENERACIÓN =============================
-let TEMPERATURE = 0.2;       // Creatividad del modelo
-let TOP_K = 55;              // Número de tokens candidatos
+let TEMPERATURE = 0.4;       // Creatividad del modelo
+let TOP_K = 50;              // Número de tokens candidatos
 let TOP_P = 0.90;            // Probabilidad acumulada
 let MAX_OUTPUT_TOKENS = 18000; // Máximo de tokens generados
 // ===========================================================================
