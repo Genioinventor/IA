@@ -9,7 +9,7 @@ const RESET_LIMIT_MINUTES = 30; // Tiempo en minutos para restablecer el límite
 let TEMPERATURE = 0.2;       // Creatividad del modelo
 let TOP_K = 55;              // Número de tokens candidatos
 let TOP_P = 0.90;            // Probabilidad acumulada
-let MAX_OUTPUT_TOKENS = 18760; // Máximo de tokens generados
+let MAX_OUTPUT_TOKENS = 18000; // Máximo de tokens generados
 // ===========================================================================
 
 // ================= CONFIGURACIÓN DE IAs ====================================
