@@ -1,27 +1,38 @@
 //====================================================== Configuración ======================================================
-// --- Límite editable de mensajes por chat ---
-let MAX_MESSAGES_PER_CHAT = 15; // <--- Cambia este valor para ajustar el límite
+
+// ================= LIMITE DE MESAJES Y TIEMPO POR CHAT =====================
+let MAX_MESSAGES_PER_CHAT = 50; // <--- Cambia este valor para ajustar el límite
 const RESET_LIMIT_MINUTES = 30; // Tiempo en minutos para restablecer el límite
+// ===========================================================================
 
-// --- Configuración de IAs ---
-let aiConfigs = [];
-let selectedAiId = null;
+// ================= CONFIGURACIÓN DE GENERACIÓN =============================
+let TEMPERATURE = 0.2;       // Creatividad del modelo
+let TOP_K = 55;              // Número de tokens candidatos
+let TOP_P = 0.90;            // Probabilidad acumulada
+let MAX_OUTPUT_TOKENS = 18760; // Máximo de tokens generados
+// ===========================================================================
 
-// Por defecto: Gemini Flash
+// ================= CONFIGURACIÓN DE IAs ====================================
+let aiConfigs      = [];
+let selectedAiId   = null;
+// ===========================================================================
+
+// ================= CONFIGURACIÓN POR DEFECTO DE IAs ========================
 const DEFAULT_AI_CONFIGS = [
     {
         id: 'gemini',
         name: 'Gemini 1.5 Flash',
-        url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
-        apiKey: 'AIzaSyDEaA54BedMrlFWhb7u_8r-sb5-a_C_U3E'  // tu API key actual
+        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+        apiKey: 'AIzaSyDEaA54BedMrlFWhb7u_8r-sb5-a_C_U3E'  // API key por defecto
     },
     {
         id: 'gemini-flash-8b',
         name: 'Gemini 1.5 Flash-8B',
-        url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent',
-        apiKey: 'AIzaSyDx1PNtPNtB6ukShHTE-E6q6Z-Vk1izdzE'  // tu API key actual
+        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent',
+        apiKey: 'AIzaSyDx1PNtPNtB6ukShHTE-E6q6Z-Vk1izdzE'  // API key SOLO DEV
     }
 ];
+// ===========================================================================
 
 //====================================================== Configuración ======================================================
 
@@ -533,7 +544,7 @@ function showWelcomeMessage() {
         <div class="welcome-message fade-in">
             <div class="welcome-icon">🌐</div>
             <h3>¡Hola! Soy DevCenter</h3>
-            <p>Tu asistente de IA para generar páginas web. Describe lo que necesitas y crearé el código por ti.</p>
+            <p>Tu asistente de IA. Puedes chatear conmigo o pedirme que genere páginas web.</p>
         </div>
     `;
 }
@@ -570,7 +581,7 @@ function addMessage(type, content, generatedCode = null, save = true, messageId 
 
     messageElement.innerHTML = `
         <div class="message-content">
-            <div class="message-text">${escapeHtml(content)}</div>
+            <div class="message-text">${type === 'ai' ? renderMarkdown(content) : escapeHtml(content)}</div>
             <div class="message-time">${timeStr}</div>
             ${generatedCode ? `
                 <div class="message-preview">
@@ -657,6 +668,393 @@ function saveUserInfo() {
 }
 
 // Entrada y envío
+
+// Función para detectar si el usuario pide generar una página web
+function isWebGenerationRequest(prompt) {
+    const lowerPrompt = prompt.toLowerCase();
+
+
+
+
+
+
+// ======================== Palabras clave específicas para generación web ====================================
+const webKeywords = 
+[
+
+/* ================= 100 frases largas/naturales ================= */
+"quiero que crees una pagina web completa para mi proyecto",
+"necesito que me hagas un sitio web moderno y responsive",
+"ayudame a diseñar un portal profesional para mi empresa",
+"puedes construir una web interactiva para mi negocio",
+"deseo desarrollar una pagina web con diseño moderno",
+"crea una landing page profesional para promocionar mi producto",
+"genera un proyecto web completo con todas las secciones necesarias",
+"haz un sitio web moderno con diseño adaptativo",
+"diseña una web app interactiva para usuarios",
+"construye una pagina web profesional para mi startup",
+"elabora un portal web con múltiples funcionalidades",
+"arma una landing page completa para captar clientes",
+"prepara un sitio web moderno y responsive",
+"programa una web app profesional con login y registro",
+"monta un proyecto web interactivo y funcional",
+"diseña una plataforma web profesional para usuarios",
+"genera una pagina web con diseño innovador",
+"haz un portal web moderno y fácil de usar",
+"crea un sitio web completo con secciones de contacto y servicios",
+"elabora un proyecto web funcional y profesional",
+"arma una web app moderna y segura",
+"prepara una landing page interactiva y atractiva",
+"programa un sitio web con diseño responsivo",
+"monta una pagina web moderna con animaciones",
+"construye un portal profesional para mostrar productos",
+"genera una web interactiva para promocionar servicios",
+"haz un proyecto web con diseño limpio y profesional",
+"crea una pagina web profesional con blog integrado",
+"diseña un sitio web moderno con secciones animadas",
+"elabora un portal web profesional con formulario de contacto",
+"arma una landing page atractiva y responsiva",
+"prepara un proyecto web con diseño creativo",
+"programa una web app moderna con dashboard",
+"monta un sitio web profesional con secciones informativas",
+"genera una pagina web para mostrar portafolio",
+"haz un portal web completo con galeria de imágenes",
+"crea una web app con login, registro y perfil de usuario",
+"diseña una landing page profesional para venta de productos",
+"elabora un proyecto web moderno con diseño interactivo",
+"arma una pagina web con secciones de contacto y servicios",
+"prepara un sitio web profesional con diseño responsive",
+"programa una plataforma web moderna y funcional",
+"monta un proyecto web interactivo con animaciones",
+"genera un portal web completo con menú y secciones",
+"haz un sitio web profesional con formulario de contacto",
+"crea una pagina web moderna con diseño llamativo",
+"diseña una web app profesional con secciones interactivas",
+"elabora un portal web moderno para empresa",
+"arma una landing page profesional y responsiva",
+"prepara un proyecto web completo con todas las secciones",
+"programa un sitio web interactivo con diseño moderno",
+"monta una pagina web profesional y atractiva",
+"genera una web app moderna con funcionalidades básicas",
+"haz un portal web moderno y responsive",
+"crea un proyecto web con diseño limpio y profesional",
+"diseña una pagina web con blog y secciones informativas",
+"elabora una web app profesional con login y registro",
+"arma un portal web completo con galeria y contacto",
+"prepara una landing page moderna y funcional",
+"programa una pagina web con diseño creativo",
+"monta un sitio web interactivo y profesional",
+"genera un proyecto web moderno con animaciones",
+"haz una web app profesional para usuarios",
+"crea un portal web completo y responsivo",
+"diseña un proyecto web moderno y funcional",
+"elabora una landing page profesional con secciones atractivas",
+"arma una pagina web moderna con diseño responsivo",
+"prepara un sitio web profesional con animaciones",
+"programa un portal web moderno con funcionalidades",
+"monta un proyecto web profesional con secciones interactivas",
+"genera una pagina web profesional con blog integrado",
+"haz un sitio web moderno con diseño responsivo",
+"crea una web app profesional con dashboard",
+"diseña un portal web profesional y moderno",
+"elabora un proyecto web completo con secciones informativas",
+"arma una landing page profesional con animaciones",
+"prepara una pagina web moderna y funcional",
+"programa un sitio web profesional con login y registro",
+"monta un portal web moderno y atractivo",
+"genera una web app profesional y responsiva",
+"haz un proyecto web completo con diseño profesional",
+"crea una pagina web moderna con galeria de imágenes",
+"diseña un sitio web profesional con secciones interactivas",
+"elabora un portal web moderno y responsivo",
+"arma un proyecto web completo con diseño creativo",
+"prepara una landing page profesional con todas las secciones",
+"programa una web app moderna con funciones básicas",
+"monta una pagina web profesional y atractiva",
+"genera un portal web moderno con animaciones",
+"haz un sitio web profesional y responsivo",
+"crea un proyecto web moderno con diseño interactivo",
+"diseña una pagina web profesional y moderna",
+"elabora una web app completa con login y registro",
+"arma un portal web moderno con galeria y contacto",
+"prepara una landing page moderna y profesional",
+"programa una pagina web interactiva y funcional",
+"monta un sitio web profesional con secciones animadas",
+"genera un proyecto web moderno y responsivo",
+"haz una web app profesional con dashboard",
+"crea un portal web completo y moderno",
+"diseña un proyecto web profesional y funcional",
+"elabora una landing page moderna y atractiva",
+"arma una pagina web profesional y creativa",
+"prepara un sitio web moderno con diseño responsivo",
+"programa un portal web profesional con funcionalidades",
+"monta un proyecto web completo y moderno",
+"genera una pagina web moderna y profesional",
+"haz un sitio web interactivo y atractivo",
+"crea una web app profesional y responsiva",
+"diseña un portal web moderno y funcional",
+"elabora un proyecto web completo con animaciones",
+"arma una landing page profesional y moderna",
+"prepara una pagina web profesional con todas las secciones",
+"programa un sitio web moderno con diseño creativo",
+"monta un portal web profesional y interactivo",
+"genera una web app moderna con secciones interactivas",
+"haz un proyecto web profesional y responsivo",
+"crea una pagina web completa y moderna",
+"diseña un sitio web profesional y atractivo",
+"elabora un portal web interactivo y moderno",
+"arma un proyecto web profesional y funcional",
+"prepara una landing page moderna con diseño responsivo",
+"programa una pagina web profesional con animaciones",
+"monta un sitio web moderno y completo",
+
+/* ================= 100 frases mal escritas/informales ================= */
+"crea pag web",
+"haz pag",
+"genera web",
+"diseña sitio",
+"arma web",
+"monta pag",
+"prepara web",
+"programa sitio",
+"crea un portal",
+"haz web",
+"genera pag",
+"c web",
+"pagina web",
+"sitio web",
+"web app",
+"landing",
+"haz portal",
+"crea pagina",
+"diseña web",
+"arma sitio",
+"monta web app",
+"prepara pagina",
+"programa web",
+"haz pagina",
+"genera sitio",
+"crea web app",
+"pag web",
+"portal web",
+"sitio moderno",
+"web profesional",
+"landing page",
+"web app pro",
+"pagina pro",
+"haz landing",
+"crea web pro",
+"monta portal",
+"arma landing",
+"web interactiva",
+"sitio interactivo",
+"pagina interactiva",
+"crea landing",
+"haz web pro",
+"programa landing",
+"prepara portal",
+"arma web",
+"monta pag web",
+"pagina site",
+"web moderna",
+"crea pag",
+"haz web app",
+"genera portal",
+"diseña landing",
+"c web app",
+"web pagina",
+"haz proyecto",
+"arma sitio web",
+"monta pagina",
+"prepara web app",
+"programa portal",
+"crea web app pro",
+"haz landing page",
+"genera pag web",
+"diseña web app",
+"c portal",
+"pagina interactiva pro",
+"arma web app",
+"monta sitio pro",
+"prepara landing",
+"programa web app",
+"haz portal pro",
+"crea pag interactiva",
+"genera web pro",
+"diseña pagina pro",
+"arma portal web",
+"monta landing page",
+"prepara sitio web",
+"programa web pro",
+"haz pagina interactiva",
+"crea web interactiva",
+"genera portal web",
+"diseña landing pro",
+"arma pagina web",
+"monta web interactiva",
+"prepara portal pro",
+"programa pag",
+"haz web interactiva",
+"crea landing pro",
+"genera proyecto web",
+"diseña web moderna",
+"arma pagina interactiva",
+"monta proyecto web",
+"prepara pagina pro",
+"programa sitio pro",
+"haz portal interactiva",
+"crea web pro",
+"genera landing interactiva",
+"diseña pagina interactiva",
+"arma web moderna",
+"monta sitio interactivo",
+"prepara web interactiva",
+"programa landing pro",
+"haz pagina pro",
+
+/* ================= 100 frases súper cortas ================= */
+"web",
+"pagina",
+"sitio",
+"portal",
+"landing",
+"web app",
+"pag web",
+"haz web",
+"crea web",
+"diseña web",
+"arma web",
+"monta web",
+"prepara web",
+"programa web",
+"web pro",
+"web interactiva",
+"sitio web",
+"pagina pro",
+"web app pro",
+"landing pro",
+"pag",
+"web app",
+"c web",
+"portal web",
+"pagina",
+"site",
+"web moderna",
+"web interactiva",
+"landing",
+"pro web",
+"app web",
+"web pagina",
+"pagina web",
+"haz pag",
+"crea pag",
+"diseña pagina",
+"arma sitio",
+"monta pag",
+"prepara pag",
+"programa sitio",
+"web app pro",
+"web pro",
+"landing page",
+"pag pro",
+"web pro",
+"pagina interactiva",
+"portal",
+"app",
+"web app",
+"pagina",
+"web app pro",
+"landing",
+"web",
+"pagina",
+"sitio",
+"portal",
+"landing page",
+"app web",
+"web pro",
+"web",
+"pag",
+"c web",
+"pagina web",
+"web app",
+"landing",
+"web app pro",
+"pag web",
+"web interactiva",
+"pagina pro",
+"web moderna",
+"landing pro",
+"portal",
+"web",
+"pagina",
+"site",
+"web app",
+"web app pro",
+"pagina",
+"web pro",
+"landing page",
+"web",
+"app",
+"pag"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Palabras clave técnicas
+    const techKeywords = ['html', 'css', 'javascript', 'landing page', 'portfolio', 'tienda online', 'ecommerce', 'dashboard'];
+
+    // Verificar si contiene frases específicas de generación web
+    const hasWebPhrase = webKeywords.some(phrase => lowerPrompt.includes(phrase));
+
+    // Verificar si contiene palabras técnicas en contexto de creación
+    const hasTechKeyword = techKeywords.some(keyword => {
+        const index = lowerPrompt.indexOf(keyword);
+        if (index === -1) return false;
+
+        // Verificar contexto: si está precedido por palabras de creación
+        const beforeKeyword = lowerPrompt.substring(Math.max(0, index - 20), index);
+        return beforeKeyword.includes('crea') || beforeKeyword.includes('haz') || beforeKeyword.includes('genera') || beforeKeyword.includes('diseña');
+    });
+
+    return hasWebPhrase || hasTechKeyword;
+}
+
 function handleInputChange() {
     const hasText = elements.messageInput.value.trim().length > 0;
     elements.sendBtn.disabled = !hasText || isGenerating;
@@ -725,32 +1123,54 @@ async function sendMessage(customPrompt) {
 
     addMessage('user', content);
 
-    showLoading();
-    isGenerating = true;
-    handleInputChange();
+    // Verificar si el prompt es para generar una página web
+    if (isWebGenerationRequest(content)) {
+        // Generar página web
+        showLoading();
+        isGenerating = true;
+        handleInputChange();
 
-    try {
-        const result = await generateWebpage(content);
-        hideLoading();
-        const messageId = addMessage('ai', result.message, result.code);
+        try {
+            const result = await generateWebpage(content);
+            hideLoading();
+            const messageId = addMessage('ai', result.message, result.code);
 
-        // Actualizar el nombre del chat si es el primer mensaje real
-        const chat = getCurrentChat();
-        if (chat && chat.messages.length <= 2) {
-            const newName = generateChatName(content);
-            chat.name = newName;
-            updateCurrentChat({});
-            renderSidebar();
+            // Actualizar el nombre del chat si es el primer mensaje real
+            const chat = getCurrentChat();
+            if (chat && chat.messages.length <= 2) {
+                const newName = generateChatName(content);
+                chat.name = newName;
+                updateCurrentChat({});
+                renderSidebar();
+            }
+        } catch (error) {
+            hideLoading();
+            console.error('Error:', error);
+            // Pasar el prompt original para el botón de reintentar
+            addMessage('ai', 'Lo siento, ha ocurrido un error al generar la página web. Por favor, inténtalo de nuevo.', null, true, null, null, { prompt: content });
         }
-    } catch (error) {
-        hideLoading();
-        console.error('Error:', error);
-        // Pasar el prompt original para el botón de reintentar
-        addMessage('ai', 'Lo siento, ha ocurrido un error al generar la página web. Por favor, inténtalo de nuevo.', null, true, null, null, { prompt: content });
-    }
 
-    isGenerating = false;
-    handleInputChange();
+        isGenerating = false;
+        handleInputChange();
+    } else {
+        // Generar respuesta de chat
+        showLoading();
+        isGenerating = true;
+        handleInputChange();
+
+        try {
+            const response = await generateChatResponse(content);
+            hideLoading();
+            addMessage('ai', response);
+        } catch (error) {
+            hideLoading();
+            console.error('Error:', error);
+            addMessage('ai', 'Lo siento, no pude procesar tu solicitud en este momento.');
+        }
+
+        isGenerating = false;
+        handleInputChange();
+    }
 }
 
 // IA y generación de código
@@ -861,24 +1281,22 @@ async function generateWebpage(prompt) {
 
 
 
-//================================================ Segunda peticion ==========================================
+      //================================================ Segunda peticion ==========================================
 systemPrompt = `
+(Puedes utilizar esto: (OPCIONAL)
+Contenido  usando Markdown:  
+- **Negritas** → **texto**  
+- *Cursivas* → *texto*  
+- Listas → - o 1.  
+- Encabezados → #, ##, ###  
+
 INSTRUCCIONES:
 - El USUARIO NECESITA HACER ESTE CAMBIO: ${prompt}
-- INTENTA QUE SIEMPRE SEA UNA PAGINA SUPER AVASADA
 - TU CÓDIGO QUE GENERASTE ANTERIORMENTE: (ver abajo)
 - Haz SOLO los cambios necesarios en el código HTML anterior según la nueva petición del usuario.
-- Usa un diseño **colorido y estilo neon elegante** (paleta fija):
-    -- Color principal: #00FFF7 (cian brillante)
-    -- Color secundario: #FF00D4 (fucsia vibrante)
-    -- Color acento: #7CFF00 (verde neón)
-    -- Fondo oscuro: #0b0b12
-- Incluye transiciones suaves y efectos de brillo elegantes:
-    - box-shadow, text-shadow y glow sutil
-    - animaciones fluidas y pulidas, no parpadeos agresivos
-- El diseño debe ser responsive y optimizado para dispositivos móviles (mobile-first)
+- Usa un diseño moderno y profesional, responsive y optimizado para dispositivos móviles (mobile-first)
 - El código debe ser funcional y listo para abrir como archivo .html
-- Responde primero con una frase corta (máx. 35 palabras) que resuma el cambio realizado
+- Responde primero con una frase corta (máx. 50 palabras) que resuma el cambio realizado
 - Deja una línea en blanco después de la frase y pega el código HTML completo actualizado
 - No expliques nada más, solo la frase corta y el código actualizado
 - Todo el contenido de texto debe estar en español
@@ -899,18 +1317,17 @@ ${historyText ? historyText : '(Sin historial previo)'}
 
 //============================================== Primer mensaje: prompt normal ===============================================
 systemPrompt = `
+(Puedes utilizar esto: (OPCIONAL)
+Contenido  usando Markdown:  
+- **Negritas** → **texto**  
+- *Cursivas* → *texto*  
+- Listas → - o 1.  
+- Encabezados → #, ##, ###  
+
+
 INSTRUCCIONES:
-- AS QUE SIEMPRE SEA UNA PAGINA SUPER AVASADA
 - Genera un código HTML completo con CSS integrado y JavaScript si es necesario.
-- Usa un diseño moderno, colorido y **estilo neon elegante** (paleta fija):
-    -- Color principal: #00FFF7 (cian brillante)
-    -- Color secundario: #FF00D4 (fucsia vibrante)
-    -- Color acento: #7CFF00 (verde neón)
-    -- Fondo oscuro: #0b0b12
-- Incluye transiciones suaves y efectos de brillo elegantes:
-    - box-shadow, text-shadow y glow sutil, nada exagerado
-    - animaciones fluidas y pulidas, no parpadeos agresivos
-- El diseño debe ser responsive y optimizado para móviles (mobile-first)
+- Usa un diseño moderno y profesional, responsive y optimizado para móviles (mobile-first)
 - Todo el código debe ser funcional y listo para abrir como archivo .html
 - Responde primero con una frase corta (máx. 35 palabras) que resuma la página, luego deja una línea en blanco y pega el código HTML completo
 - No expliques nada más, solo la frase corta y el código
@@ -928,8 +1345,6 @@ Responde con una frase corta y el archivo HTML completo:
 `;
 
 //=============================================================================================================================
-
-
 
 
 
@@ -1001,11 +1416,38 @@ Responde con una frase corta y el archivo HTML completo:
                         ],
                     },
                 ],
-                generationConfig: {
-                    temperature: 0.2,
-                    topK: 50,
-                    topP: 0.9,
-                    maxOutputTokens: 8000,
+
+
+
+
+
+
+
+
+
+
+
+              //  generationConfig: {
+                //    temperature: 0.2,
+                //    topK: 50,
+                  //  topP: 0.9,
+                   // maxOutputTokens: 8000,
+
+
+
+                   generationConfig: {
+    temperature: TEMPERATURE,
+    topK: TOP_K,
+    topP: TOP_P,
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
+
+
+
+
+
+
+
+
                 }
             }),
         });
@@ -1036,6 +1478,151 @@ Responde con una frase corta y el archivo HTML completo:
     } catch (error) {
         console.error('Error generating webpage:', error);
         throw new Error('Error al generar la página web: ' + error.message);
+    }
+}
+
+// Función para generar respuesta de chat normal
+async function generateChatResponse(prompt) {
+    loadUserInfo();
+
+    loadAiConfigs();
+    const ai = aiConfigs.find(a => a.id === selectedAiId) || aiConfigs[0];
+    const API_URL = ai.url;
+    const API_KEY = ai.apiKey;
+
+    const chat = getCurrentChat();
+    let historyText = '';
+    if (chat && chat.messages && chat.messages.length > 0) {
+        historyText = chat.messages
+            .filter(m => m.type === 'user' || m.type === 'ai')
+            .map(m => {
+                if (m.type === 'user') {
+                    return `Usuario: ${m.content}`;
+                } else if (m.type === 'ai') {
+                    return `DevCenter: ${m.content}`;
+                }
+                return '';
+            })
+            .join('\n');
+    }
+
+    let userInfoText = '';
+    if (userInfo && (userInfo.name || userInfo.birth || userInfo.email || userInfo.custom)) {
+        userInfoText = [
+            userInfo.name ? `Nombre: ${userInfo.name}` : '',
+            userInfo.birth ? `Fecha de nacimiento: ${userInfo.birth}` : '',
+            userInfo.email ? `Correo: ${userInfo.email}` : '',
+            userInfo.custom ? `Información personalizada: ${userInfo.custom}` : ''
+        ].filter(Boolean).join('\n');
+    }
+
+
+
+
+
+
+
+// No menciones nada sobre generar páginas web o aplicaciones web a menos que el usuario lo pida explícitamente.
+
+    const systemPrompt = `
+Eres un asistente de IA TU NOMBRE ES DevCenterIA que responde normalmente a las preguntas del usuario. Responde de forma clara y concisa a cualquier pregunta o conversación general.
+
+
+(Puedes utilizar esto: (OPCIONAL)
+Contenido  usando Markdown:  
+- **Negritas** → **texto**  
+- *Cursivas* → *texto*  
+- Listas → - o 1.  
+- Encabezados → #, ##, ###  
+
+
+
+
+
+INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
+${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
+HISTORIAL DE MENSAJES:
+${historyText ? historyText : '(Sin historial previo)'}
+USUARIO SOLICITA: ${prompt}
+Responde de forma clara y concisa, sin generar código ni páginas web.
+
+
+  
+
+`;
+
+
+
+
+
+
+
+
+
+
+    try {
+        const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: systemPrompt,
+                            },
+                        ],
+                    },
+                ],
+
+
+
+             //   generationConfig: {
+               //     temperature: 0.7,
+               //    topK: 50,
+               //     topP: 0.9,
+               //     maxOutputTokens: 18000,
+
+
+
+
+
+
+
+generationConfig: {
+    temperature: TEMPERATURE,
+    topK: TOP_K,
+    topP: TOP_P,
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
+
+
+
+
+
+
+
+
+
+
+                }
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error:', errorText);
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        return text.trim();
+    } catch (error) {
+        console.error('Error generating chat response:', error);
+        return 'Lo siento, no pude procesar tu solicitud en este momento.';
     }
 }
 
@@ -1125,6 +1712,41 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function renderMarkdown(text) {
+    // Escapar HTML primero para seguridad
+    let html = escapeHtml(text);
+
+    // Convertir encabezados (# ## ###)
+    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+    // Convertir negritas (**texto**)
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Convertir cursivas (*texto*)
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Convertir bloques de código (```)
+    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+    // Convertir código inline (`codigo`)
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Convertir listas (- item)
+    html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+    // Convertir listas numeradas (1. item)
+    html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>');
+
+    // Convertir saltos de línea simples a <br>
+    html = html.replace(/\n/g, '<br>');
+
+    return html;
 }
 
 function generateChatName(prompt) {
@@ -1375,32 +1997,54 @@ async function sendMessage(customPrompt) {
 
     addMessage('user', content);
 
-    showLoading();
-    isGenerating = true;
-    handleInputChange();
+    // Verificar si el prompt es para generar una página web
+    if (isWebGenerationRequest(content)) {
+        // Generar página web
+        showLoading();
+        isGenerating = true;
+        handleInputChange();
 
-    try {
-        const result = await generateWebpage(content);
-        hideLoading();
-        const messageId = addMessage('ai', result.message, result.code);
+        try {
+            const result = await generateWebpage(content);
+            hideLoading();
+            const messageId = addMessage('ai', result.message, result.code);
 
-        // Actualizar el nombre del chat si es el primer mensaje real
-        const chat = getCurrentChat();
-        if (chat && chat.messages.length <= 2) {
-            const newName = generateChatName(content);
-            chat.name = newName;
-            updateCurrentChat({});
-            renderSidebar();
+            // Actualizar el nombre del chat si es el primer mensaje real
+            const chat = getCurrentChat();
+            if (chat && chat.messages.length <= 2) {
+                const newName = generateChatName(content);
+                chat.name = newName;
+                updateCurrentChat({});
+                renderSidebar();
+            }
+        } catch (error) {
+            hideLoading();
+            console.error('Error:', error);
+            // Pasar el prompt original para el botón de reintentar
+            addMessage('ai', 'Lo siento, ha ocurrido un error al generar la página web. Por favor, inténtalo de nuevo.', null, true, null, null, { prompt: content });
         }
-    } catch (error) {
-        hideLoading();
-        console.error('Error:', error);
-        // Pasar el prompt original para el botón de reintentar
-        addMessage('ai', 'Lo siento, ha ocurrido un error al generar la página web. Por favor, inténtalo de nuevo.', null, true, null, null, { prompt: content });
-    }
 
-    isGenerating = false;
-    handleInputChange();
+        isGenerating = false;
+        handleInputChange();
+    } else {
+        // Generar respuesta de chat normal
+        showLoading();
+        isGenerating = true;
+        handleInputChange();
+
+        try {
+            const response = await generateChatResponse(content);
+            hideLoading();
+            addMessage('ai', response);
+        } catch (error) {
+            hideLoading();
+            console.error('Error:', error);
+            addMessage('ai', 'Lo siento, no pude procesar tu solicitud en este momento.');
+        }
+
+        isGenerating = false;
+        handleInputChange();
+    }
 }
 
 // IA y generación de código
@@ -1456,19 +2100,36 @@ async function generateWebpage(prompt) {
             .reverse()
             .find(m => m.type === 'ai' && m.generatedCode)?.generatedCode || '';
 
-        systemPrompt = `
+
+
+
+
+
+
+
+
+
+
+
+
+      //================================================ Segunda peticion ==========================================
+systemPrompt = `
+(Puedes utilizar esto: (OPCIONAL)
+Contenido  usando Markdown:  
+- **Negritas** → **texto**  
+- *Cursivas* → *texto*  
+- Listas → - o 1.  
+- Encabezados → #, ##, ###  
 INSTRUCCIONES:
 - El USUARIO NECESITA HACER ESTE CAMBIO: ${prompt}
 - TU CÓDIGO QUE GENERASTE ANTERIORMENTE: (ver abajo)
 - Haz SOLO los cambios necesarios en el código HTML anterior según la nueva petición del usuario.
-- Usa un diseño colorido y con animaciones estilo neon.
-- Asegúrate de incluir transiciones suaves, efectos de brillo y colores vibrantes.
-- El diseño debe ser responsive y optimizado para dispositivos móviles.
-- El código debe ser funcional y listo para usar.
-- Responde primero con una frase corta (máximo 35 palabras) que resuma el cambio, luego el código HTML completo actualizado.
-- Después de la frase, deja una línea en blanco y pega el código HTML actualizado.
-- No expliques nada más, solo la frase corta y el código.
-- Todo el contenido de texto debe estar en español.
+- Usa un diseño moderno y profesional, responsive y optimizado para dispositivos móviles (mobile-first)
+- El código debe ser funcional y listo para abrir como archivo .html
+- Responde primero con una frase corta (máx. 50 palabras) que resuma el cambio realizado
+- Deja una línea en blanco después de la frase y pega el código HTML completo actualizado
+- No expliques nada más, solo la frase corta y el código actualizado
+- Todo el contenido de texto debe estar en español
 
 CÓDIGO ANTERIOR:
 ${lastAICode ? lastAICode : '(No hay código anterior)'}
@@ -1479,19 +2140,27 @@ ${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
 HISTORIAL DE MENSAJES:
 ${historyText ? historyText : '(Sin historial previo)'}
 `;
-    } else {
-        // Primer mensaje: prompt normal
-        systemPrompt = `
+
+//=============================================================================================================================
+
+} else {
+
+//============================================== Primer mensaje: prompt normal ===============================================
+systemPrompt = `
+(Puedes utilizar esto: (OPCIONAL)
+Contenido  usando Markdown:  
+- **Negritas** → **texto**  
+- *Cursivas* → *texto*  
+- Listas → - o 1.  
+- Encabezados → #, ##, ###  
+
 INSTRUCCIONES:
 - Genera un código HTML completo con CSS integrado y JavaScript si es necesario.
-- Usa un diseño moderno, colorido y con animaciones estilo neon.
-- Asegúrate de incluir transiciones suaves, efectos de brillo y colores vibrantes.
-- El diseño debe ser responsive y optimizado para dispositivos móviles.
-- El código debe ser funcional y listo para usar.
-- Responde primero con una frase corta (máximo 35 palabras) que resuma la generación, luego el código HTML completo.
-- Después de la frase, deja una línea en blanco y pega el código HTML completo.
-- No expliques nada más, solo la frase corta y el código.
-- Todo el contenido de texto debe estar en español.
+- Usa un diseño moderno y profesional, responsive y optimizado para móviles (mobile-first)
+- Todo el código debe ser funcional y listo para abrir como archivo .html
+- Responde primero con una frase corta (máx. 35 palabras) que resuma la página, luego deja una línea en blanco y pega el código HTML completo
+- No expliques nada más, solo la frase corta y el código
+- Todo el contenido de texto debe estar en español
 
 INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
 ${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
@@ -1503,6 +2172,33 @@ USUARIO SOLICITA: ${prompt}
 
 Responde con una frase corta y el archivo HTML completo:
 `;
+
+//=============================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 
     try {
@@ -1521,11 +2217,26 @@ Responde con una frase corta y el archivo HTML completo:
                         ],
                     },
                 ],
-                generationConfig: {
-                    temperature: 0.7,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 8192,
+
+
+
+
+generationConfig: {
+    temperature: TEMPERATURE,
+    topK: TOP_K,
+    topP: TOP_P,
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
+
+
+
+                //generationConfig: {
+                  //  temperature: 0.2,
+                   // topK: 50,
+                   // topP: 0.90,
+                  //  maxOutputTokens: 18000,
+
+
+
                 }
             }),
         });
