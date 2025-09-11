@@ -1,12 +1,12 @@
 //====================================================== Configuración ======================================================
 
 // ================= LIMITE DE MESAJES Y TIEMPO POR CHAT =====================
-let MAX_MESSAGES_PER_CHAT = 50; // <--- Cambia este valor para ajustar el límite
+let MAX_MESSAGES_PER_CHAT = 15; // <--- Cambia este valor para ajustar el límite
 const RESET_LIMIT_MINUTES = 30; // Tiempo en minutos para restablecer el límite
 // ===========================================================================
 
 // ================= CONFIGURACIÓN DE GENERACIÓN =============================
-let TEMPERATURE = 0.4;       // Creatividad del modelo
+let TEMPERATURE = 0.2;       // Creatividad del modelo
 let TOP_K = 50;              // Número de tokens candidatos
 let TOP_P = 0.90;            // Probabilidad acumulada
 let MAX_OUTPUT_TOKENS = 18000; // Máximo de tokens generados
@@ -677,6 +677,24 @@ function isWebGenerationRequest(prompt) {
 
 
 
+// Referencias a elementos
+const sendBtn = document.getElementById('sendBtn');
+const messageInput = document.getElementById('messageInput');
+
+// Event listener para enviar mensaje
+sendBtn.addEventListener('click', async () => {
+    const prompt = messageInput.value.trim(); // Tomar el texto del usuario
+    if (prompt === '') return; // No hacer nada si está vacío
+
+    // Limpiar el textarea inmediatamente
+    messageInput.value = '';
+    messageInput.style.height = 'auto'; // Opcional si usas auto-resize
+
+    // Aquí llamas a tu función de generación de chat o página
+    await generateChatResponse(prompt); 
+    // o si es generación de página:
+    // await generateWebpage(prompt);
+});
 
 // ======================== Palabras clave específicas para generación web ====================================
 const webKeywords = 
