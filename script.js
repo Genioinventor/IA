@@ -1,7 +1,7 @@
 //====================================================== Configuración ======================================================
 
 // ================= LIMITE DE MESAJES Y TIEMPO POR CHAT =====================
-let MAX_MESSAGES_PER_CHAT = 15; // <--- Cambia este valor para ajustar el límite
+let MAX_MESSAGES_PER_CHAT = 50; // <--- Cambia este valor para ajustar el límite
 const RESET_LIMIT_MINUTES = 30; // Tiempo en minutos para restablecer el límite
 // ===========================================================================
 
