@@ -6,27 +6,54 @@
 }
 
 :root {
-    --bg-primary: #000000;
-    --bg-secondary: #0a0a0a;
-    --bg-tertiary: #1a1a1a;
+    /* Colores base mejorados */
+    --bg-primary: radial-gradient(ellipse at center, #0f0f23 0%, #000000 70%);
+    --bg-secondary: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+    --bg-tertiary: linear-gradient(135deg, #1a1a1a 0%, #2a2a3a 100%);
+    --bg-glass: rgba(26, 26, 26, 0.7);
+    --bg-glass-hover: rgba(59, 130, 246, 0.1);
+
+    /* Texto */
     --text-primary: #ffffff;
-    --text-secondary: #a0a0a0;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --border: #2a2a2a;
-    --success: #10b981;
-    --error: #ef4444;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-    --border-radius: 12px;
-    --border-radius-sm: 8px;
-    --transition: all 0.2s ease;
-    --transition-fast: all 0.15s ease;
-    --transition-slow: all 0.3s ease;
+    --text-secondary: #b4b4b4;
+    --text-muted: #6b7280;
+
+    /* Acentos mejorados */
+    --accent: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+    --accent-solid: #3b82f6;
+    --accent-hover: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #0891b2 100%);
+    --accent-light: rgba(59, 130, 246, 0.1);
+
+    /* Estados */
+    --success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --error: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    --warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+
+    /* Bordes */
+    --border: rgba(255, 255, 255, 0.1);
+    --border-bright: rgba(59, 130, 246, 0.3);
+
+    /* Sombras mejoradas */
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+    --shadow-glow-error: 0 0 20px rgba(239, 68, 68, 0.3);
+
+    /* Bordes redondeados */
+    --border-radius: 16px;
+    --border-radius-sm: 12px;
+    --border-radius-lg: 24px;
+
+    /* Transiciones mejoradas */
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     height: 100vh;
@@ -35,6 +62,29 @@ body {
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+}
+
+/* Efectos de fondo animado */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+    animation: backgroundShift 20s ease-in-out infinite;
+}
+
+@keyframes backgroundShift {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
 }
 
 /* Header */
@@ -533,6 +583,84 @@ body {
     margin-bottom: 0.5rem;
 }
 
+.message-text a {
+    color: #4285f4;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.message-text a:hover {
+    color: #3367d6;
+    text-decoration: none;
+}
+
+/* Estilos adicionales para Markdown */
+.message-text h1, .message-text h2, .message-text h3, 
+.message-text h4, .message-text h5, .message-text h6 {
+    margin: 1rem 0 0.5rem 0;
+    font-weight: bold;
+}
+
+.message-text h1 { font-size: 1.5rem; }
+.message-text h2 { font-size: 1.3rem; }
+.message-text h3 { font-size: 1.1rem; }
+
+.message-text code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+}
+
+.message-text pre {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+
+.message-text pre code {
+    background: none;
+    padding: 0;
+}
+
+.message-text blockquote {
+    border-left: 4px solid #ddd;
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+    color: #666;
+    font-style: italic;
+}
+
+.message-text ul, .message-text ol {
+    margin: 0.5rem 0;
+    padding-left: 2rem;
+}
+
+.message-text li {
+    margin: 0.2rem 0;
+}
+
+.message-text hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 1rem 0;
+}
+
+.message-text img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 0.5rem 0;
+}
+
+.message-text del {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
 .message-time {
     font-size: 0.75rem;
     opacity: 0.7;
@@ -813,21 +941,32 @@ body {
     border: none;
 }
 
-/* Loading */
+/* Loading Mejorado */
 .loading {
     position: fixed;
     bottom: 100px;
     left: 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--border-radius);
-    padding: 1rem;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 1.2rem;
     display: none;
     z-index: 50;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    min-width: 180px;
+    animation: loadingPulse 2s ease-in-out infinite;
 }
 
 .loading.show {
     display: block;
+    animation: fadeInUp 0.4s ease-out, loadingPulse 2s ease-in-out infinite 0.4s;
+}
+
+.loading-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .typing-indicator {
@@ -837,31 +976,67 @@ body {
 }
 
 .typing-indicator span {
-    width: 8px;
-    height: 8px;
-    background: var(--text-secondary);
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
     border-radius: 50%;
-    animation: typing 1.5s infinite;
+    animation: typingDots 1.6s infinite;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .typing-indicator span:nth-child(2) {
-    animation-delay: 0.1s;
-}
-
-.typing-indicator span:nth-child(3) {
     animation-delay: 0.2s;
 }
 
-@keyframes typing {
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
 
-    0%,
-    60%,
-    100% {
-        opacity: 0.4;
+.loading-text {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0.9;
+    animation: textFade 2s ease-in-out infinite;
+}
+
+@keyframes typingDots {
+    0%, 80%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
     }
-
-    30% {
+    40% {
         opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes loadingPulse {
+    0%, 100% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+    }
+}
+
+@keyframes textFade {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
@@ -1052,6 +1227,88 @@ body {
 .ai-item.selected {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--accent);
+}
+
+.ai-limits {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem 0;
+}
+
+.ai-limits small {
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 0.85em;
+}
+
+.ai-description {
+    background: rgba(160, 160, 160, 0.1);
+    border-left: 3px solid var(--text-secondary);
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem 0;
+    font-style: italic;
+}
+
+.ai-description small {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.ai-capabilities {
+    margin: 0.5rem 0;
+}
+
+.ai-capabilities small {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+}
+
+.capability-tag {
+    display: inline-block;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.15rem 0.5rem;
+    margin: 0.1rem 0.25rem 0.1rem 0;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Notificación de IA para usuarios DevCenter */
+.ai-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    z-index: 1000;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+    min-width: 200px;
+    max-width: 350px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ai-notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.ai-notification::before {
+    content: '🤖';
+    margin-right: 0.5rem;
+    font-size: 1.1em;
 }
 
 .ai-item-header {
@@ -1509,3 +1766,63 @@ body {
         opacity: 1;
     }
 }
+
+/* =================== ESTILOS ESPECÍFICOS PARA BOTONES DE ERROR =================== */
+
+/* Botón Reenviar - Verde con efecto éxito */
+.action-btn[onclick*="retryGenerateMessage"] {
+    background: var(--success) !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    color: white !important;
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    padding: 0.75rem 1.25rem;
+    transition: var(--transition-bounce);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.action-btn[onclick*="retryGenerateMessage"]:hover {
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.5), 0 8px 25px rgba(16, 185, 129, 0.3) !important;
+    transform: translateY(-3px) scale(1.05) !important;
+    animation: successPulse 0.6s ease-in-out;
+}
+
+
+/* Efectos de brillo deslizante para botón */
+.action-btn[onclick*="retryGenerateMessage"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+    z-index: 1;
+}
+
+.action-btn[onclick*="retryGenerateMessage"]:hover::before {
+    left: 100%;
+}
+
+/* Animaciones específicas */
+@keyframes successPulse {
+    0%, 100% { 
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 0 25px rgba(16, 185, 129, 0.5), 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+    50% { 
+        transform: translateY(-5px) scale(1.08);
+        box-shadow: 0 0 35px rgba(16, 185, 129, 0.7), 0 12px 30px rgba(16, 185, 129, 0.4);
+    }
+}
+
+
+/* Contenedor de botones de error mejorado */
+.message.ai .message-content .action-btn {
+    margin: 0.25rem;
+    font-size: 0.85rem;
+}
+
