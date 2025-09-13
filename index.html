@@ -4,9 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>DevCenter IA</title>
     <meta name="description" content="DevCenter es tu asistente de IA para generar páginas web completas y funcionales">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 
 <body>
@@ -37,6 +40,17 @@
                 <span id="aiConfigBtnContainer" style="display:none;">
                     <button class="user-info-btn" id="aiConfigBtn" title="Configurar IAs">
                         <span class="user-info-emoji">🔧</span>
+                    </button>
+                </span>
+                <span id="devCenterToolsContainer" style="display:none;">
+                    <button class="user-info-btn" id="aiStatusBtn" title="Estado de IA">
+                        <span class="user-info-emoji">🤖</span>
+                    </button>
+                    <button class="user-info-btn" id="systemStatsBtn" title="Estadísticas del Sistema">
+                        <span class="user-info-emoji">📊</span>
+                    </button>
+                    <button class="user-info-btn" id="devToolsBtn" title="Herramientas de Desarrollo">
+                        <span class="user-info-emoji">⚡</span>
                     </button>
                 </span>
                 <button class="close-btn" id="closeSidebarBtn">×</button>
@@ -85,6 +99,11 @@
         </div>
     </main>
 
+    <!-- Notificación para usuarios DevCenter -->
+    <div id="aiNotification" class="ai-notification">
+        <span id="aiNotificationText"></span>
+    </div>
+
     <!-- Preview Modal -->
     <div class="preview-modal" id="previewModal">
         <div class="preview-header">
@@ -127,10 +146,13 @@
 
     <!-- Loading -->
     <div class="loading" id="loading">
-        <div class="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div class="loading-content">
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="loading-text" id="loadingText">Generando...</div>
         </div>
     </div>
 
@@ -168,7 +190,7 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 
 </html>
