@@ -15,35 +15,167 @@ let MAX_OUTPUT_TOKENS = 18000; // Máximo de tokens generados
 // ================= CONFIGURACIÓN DE IAs ====================================
 let aiConfigs      = [];
 let selectedAiId   = null;
+let currentAiIndex = 0;  // Índice para rotación automática de IAs
+let failedAiIds    = new Set();  // IDs de IAs que fallaron recientemente
 // ===========================================================================
 
 // ================= CONFIGURACIÓN POR DEFECTO DE IAs ========================
 const DEFAULT_AI_CONFIGS = [
+    // Modelo por defecto: Gemini 2.5 Flash-Lite (Mayor cantidad de respuestas diarias)
     {
-        id: 'gemini',
-        name: 'Gemini 1.5 Flash',
-        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
-        apiKey: 'AIzaSyDEaA54BedMrlFWhb7u_8r-sb5-a_C_U3E'  // API key por defecto
+        id: 'gemini-2.5-flash-lite',
+        name: 'Gemini 2.5 Flash-Lite',
+        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+        apiKey: 'AIzaSyDEaA54BedMrlFWhb7u_8r-sb5-a_C_U3E',
+        rpm: 15, tpm: 250000, rpd: 1000,
+        description: '⚡ Modelo predeterminado optimizado y rápido con la mayor cantidad de respuestas diarias (1,000 RPD). Ideal para uso frecuente.',
+        capabilities: ['⚡ 15 RPM', '🧠 250K TPM', '📅 1,000 RPD', 'Generación rápida', 'Uso frecuente']
     },
     {
-        id: 'gemini-flash-8b',
-        name: 'Gemini 1.5 Flash-8B',
-        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent',
-        apiKey: 'AIzaSyDx1PNtPNtB6ukShHTE-E6q6Z-Vk1izdzE'  // API key SOLO DEV
+        id: 'gemini-2.5-pro',
+        name: 'Gemini 2.5 Pro',
+        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+        apiKey: 'AIzaSyDx1PNtPNtB6ukShHTE-E6q6Z-Vk1izdzE',
+        rpm: 5, tpm: 250000, rpd: 100,
+        description: '🏆 Modelo avanzado de mayor calidad para tareas complejas de razonamiento y análisis.',
+        capabilities: ['⚡ 5 RPM', '🧠 250K TPM', '📅 100 RPD', 'Razonamiento complejo', 'Máxima calidad']
+    },
+    {
+        id: 'gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+        apiKey: 'AIzaSyA7YE5mC26qxlqYL0uf9FxfrWDGRjSH-y0',
+        rpm: 10, tpm: 250000, rpd: 250,
+        description: '⚖️ Balance perfecto entre velocidad y calidad para la mayoría de tareas.',
+        capabilities: ['⚡ 10 RPM', '🧠 250K TPM', '📅 250 RPD', 'Velocidad media', 'Versátil']
+    },
+    {
+        id: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+        apiKey: 'AIzaSyCW8tZHObTllGSsOwOa9oQecg01mHOnSbs',
+        rpm: 15, tpm: 1000000, rpd: 200,
+        description: '🚀 Modelo experimental con alta capacidad de tokens (1M TPM) para textos largos.',
+        capabilities: ['⚡ 15 RPM', '🧠 1M TPM', '📅 200 RPD', 'Tokens elevados', 'Textos extensos']
+    },
+    {
+        id: 'gemini-2.0-flash-lite',
+        name: 'Gemini 2.0 Flash-Lite',
+        url:  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
+        apiKey: 'AIzaSyDx1PNtPNtB6ukShHTE-E6q6Z-Vk1izdzE',
+        rpm: 30, tpm: 1000000, rpd: 200,
+        description: '💨 Versión ligera y rápida con muchas solicitudes por minuto (30 RPM).',
+        capabilities: ['⚡ 30 RPM', '🧠 1M TPM', '📅 200 RPD', 'Velocidad alta', 'Muchas solicitudes']
     }
 ];
 // ===========================================================================
 
 //====================================================== Configuración ======================================================
 
+// ================= SISTEMA DE FAILOVER AUTOMÁTICO =========================
+function getNextAvailableAi() {
+    // Filtramos las IAs que no han fallado recientemente
+    const availableAis = aiConfigs.filter(ai => !failedAiIds.has(ai.id));
 
+    // Si todas han fallado, reseteamos la lista de fallidas y usamos todas
+    if (availableAis.length === 0) {
+        console.log('🔄 Todas las IAs fallaron, reseteando lista de fallidas...');
+        failedAiIds.clear();
+        const ai = aiConfigs[currentAiIndex % aiConfigs.length];
+        currentAiIndex++;
+        return ai;
+    }
 
+    // En el primer intento, preferir la IA seleccionada por el usuario si está disponible
+    if (currentAiIndex === 0 && selectedAiId) {
+        const selectedAi = availableAis.find(ai => ai.id === selectedAiId);
+        if (selectedAi) {
+            currentAiIndex++;
+            console.log(`👤 Usando IA seleccionada: ${selectedAi.name} (${selectedAi.id})`);
+            return selectedAi;
+        }
+    }
 
+    // Rotamos entre las IAs disponibles
+    const nextAi = availableAis[currentAiIndex % availableAis.length];
+    currentAiIndex++;
 
+    console.log(`🔀 Cambiando a: ${nextAi.name} (${nextAi.id})`);
+    return nextAi;
+}
 
+function markAiAsFailed(aiId) {
+    failedAiIds.add(aiId);
+    console.log(`❌ IA marcada como fallida: ${aiId}`);
 
+    // Limpiar la lista de fallidas después de 5 minutos
+    setTimeout(() => {
+        failedAiIds.delete(aiId);
+        console.log(`✅ IA restaurada: ${aiId}`);
+    }, 5 * 60 * 1000);
+}
 
+function isRetriableError(error) {
+    // Solo marcar como fallida si es un error transitorio/de red
+    const message = error.message.toLowerCase();
+    const isNetworkError = message.includes('network') || message.includes('fetch') || message.includes('timeout');
+    const isRateLimit = message.includes('429') || message.includes('quota') || message.includes('rate limit');
+    const isServerError = message.includes('500') || message.includes('502') || message.includes('503') || message.includes('504');
 
+    return isNetworkError || isRateLimit || isServerError;
+}
+
+async function makeApiCallWithFailover(apiCall, maxRetries = 3) {
+    let lastError = null;
+
+    // Resetear el índice para cada nueva llamada para que empiece con selectedAiId
+    currentAiIndex = 0;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const ai = getNextAvailableAi();
+        try {
+            console.log(`🔄 Intento ${attempt + 1}/${maxRetries} con ${ai.name}`);
+
+            const result = await apiCall(ai);
+
+            // Si llegamos aquí, la llamada fue exitosa
+            console.log(`✅ Éxito con ${ai.name}`);
+
+            // Mostrar notificación de IA para usuarios DevCenter (solo al éxito)
+            if (isDevCenterUser()) {
+                showAiNotification(ai.name);
+            }
+
+            return result;
+
+        } catch (error) {
+            lastError = error;
+
+            console.error(`❌ Error con ${ai.name}:`, error.message);
+
+            // Solo marcar como fallida si es un error transitorio
+            if (isRetriableError(error)) {
+                markAiAsFailed(ai.id);
+                console.log(`⚠️ Error transitorio, marcando ${ai.name} como fallida temporalmente`);
+            } else {
+                console.log(`🚫 Error de configuración/contenido, no rotando: ${error.message}`);
+                // Para errores no transitorios, fallar inmediatamente
+                throw error;
+            }
+
+            // Si es el último intento, lanzamos el error
+            if (attempt === maxRetries - 1) {
+                throw new Error(`Todas las IAs fallaron. Último error: ${error.message}`);
+            }
+
+            // Esperar un poco antes del siguiente intento
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    throw lastError;
+}
+// ===========================================================================
 
 // Estado global
 let currentChatId = null;
@@ -106,18 +238,150 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateAiConfigBtnVisibility() {
-    // Solo mostrar el botón si el usuario es Justin y descripción personalizada exactamente DevCenter
+    // Solo mostrar herramientas si el usuario tiene descripción personalizada "DevCenter"
     loadUserInfo();
     const container = document.getElementById('aiConfigBtnContainer');
-    if (
-        userInfo &&
-        userInfo.name === 'Justin' &&
-        typeof userInfo.custom === 'string' &&
-        userInfo.custom.trim() === 'DevCenter'
-    ) {
+
+    // Verificar si el usuario es DevCenter (solo por descripción personalizada)
+    if (isDevCenterUser()) {
         if (container) container.style.display = '';
+        // Mostrar herramientas adicionales para usuarios DevCenter
+        showDevCenterTools();
     } else {
         if (container) container.style.display = 'none';
+        // Ocultar herramientas adicionales
+        hideDevCenterTools();
+    }
+}
+
+// Función para verificar si el usuario es DevCenter
+function isDevCenterUser() {
+    return userInfo && 
+           typeof userInfo.custom === 'string' && 
+           userInfo.custom.trim() === 'DevCenter';
+}
+
+// Mostrar herramientas adicionales para usuarios DevCenter
+function showDevCenterTools() {
+    const container = document.getElementById('devCenterToolsContainer');
+    if (container) {
+        container.style.display = '';
+        setupDevCenterToolsListeners();
+    }
+}
+
+// Ocultar herramientas adicionales
+function hideDevCenterTools() {
+    const container = document.getElementById('devCenterToolsContainer');
+    if (container) {
+        container.style.display = 'none';
+    }
+}
+
+// Configurar event listeners para herramientas DevCenter
+function setupDevCenterToolsListeners() {
+    const aiStatusBtn = document.getElementById('aiStatusBtn');
+    const systemStatsBtn = document.getElementById('systemStatsBtn');
+    const devToolsBtn = document.getElementById('devToolsBtn');
+
+    if (aiStatusBtn) {
+        aiStatusBtn.removeEventListener('click', showAiStatus);
+        aiStatusBtn.addEventListener('click', showAiStatus);
+    }
+
+    if (systemStatsBtn) {
+        systemStatsBtn.removeEventListener('click', showSystemStats);
+        systemStatsBtn.addEventListener('click', showSystemStats);
+    }
+
+    if (devToolsBtn) {
+        devToolsBtn.removeEventListener('click', showDevTools);
+        devToolsBtn.addEventListener('click', showDevTools);
+    }
+}
+
+// Funciones para herramientas DevCenter
+function showAiStatus() {
+    loadAiConfigs();
+    const currentAi = aiConfigs.find(ai => ai.id === selectedAiId) || aiConfigs[0];
+    const availableAis = aiConfigs.filter(ai => !failedAiIds.has(ai.id));
+    const failedCount = failedAiIds.size;
+
+    let statusMessage = `🤖 Estado Actual de IA:\n\n`;
+    statusMessage += `📍 IA Actual: ${currentAi.name}\n`;
+    statusMessage += `✅ IAs Disponibles: ${availableAis.length}/${aiConfigs.length}\n`;
+    statusMessage += `❌ IAs Fallidas: ${failedCount}\n\n`;
+
+    if (failedCount > 0) {
+        statusMessage += `IAs temporalmente no disponibles:\n`;
+        failedAiIds.forEach(failedId => {
+            const failedAi = aiConfigs.find(ai => ai.id === failedId);
+            if (failedAi) {
+                statusMessage += `• ${failedAi.name}\n`;
+            }
+        });
+    }
+
+    alert(statusMessage);
+}
+
+function showSystemStats() {
+    const chatsCount = chats.length;
+    const totalMessages = chats.reduce((total, chat) => total + (chat.messages ? chat.messages.length : 0), 0);
+    const currentChat = getCurrentChat();
+    const currentChatMessages = currentChat ? currentChat.messages.length : 0;
+
+    let statsMessage = `📊 Estadísticas del Sistema:\n\n`;
+    statsMessage += `💬 Total de Chats: ${chatsCount}\n`;
+    statsMessage += `📝 Total de Mensajes: ${totalMessages}\n`;
+    statsMessage += `🔄 Mensajes en Chat Actual: ${currentChatMessages}\n`;
+    statsMessage += `🕒 Sesión Iniciada: ${new Date().toLocaleString('es-ES')}\n\n`;
+    statsMessage += `🔧 IAs Configuradas: ${aiConfigs.length}\n`;
+    statsMessage += `⚡ Modo DevCenter: Activado\n`;
+
+    alert(statsMessage);
+}
+
+function showDevTools() {
+    let devMessage = `⚡ Herramientas de Desarrollo:\n\n`;
+    devMessage += `🗂️ localStorage:\n`;
+    devMessage += `• Chats guardados: ${localStorage.getItem('devCenter_chats') ? 'Sí' : 'No'}\n`;
+    devMessage += `• Configuración AI: ${localStorage.getItem('devCenter_aiConfigs') ? 'Sí' : 'No'}\n`;
+    devMessage += `• Info Usuario: ${localStorage.getItem('devCenter_userInfo') ? 'Sí' : 'No'}\n\n`;
+    devMessage += `🔍 Debug:\n`;
+    devMessage += `• Console.log: F12 → Console\n`;
+    devMessage += `• Logs de IA: Activos\n`;
+    devMessage += `• Failover: Funcionando\n\n`;
+    devMessage += `📱 Información del Navegador:\n`;
+    devMessage += `• Ancho: ${window.innerWidth}px\n`;
+    devMessage += `• Alto: ${window.innerHeight}px\n`;
+    devMessage += `• UserAgent: ${navigator.userAgent.substring(0, 50)}...\n`;
+
+    alert(devMessage);
+}
+
+// Funciones para notificación de IA (solo usuarios DevCenter)
+function showAiNotification(aiName) {
+    if (!isDevCenterUser()) return;
+
+    const notification = document.getElementById('aiNotification');
+    const notificationText = document.getElementById('aiNotificationText');
+
+    if (notification && notificationText) {
+        notificationText.textContent = `Usando: ${aiName}`;
+        notification.classList.add('show');
+
+        // Ocultar automáticamente después de 3 segundos
+        setTimeout(() => {
+            hideAiNotification();
+        }, 3000);
+    }
+}
+
+function hideAiNotification() {
+    const notification = document.getElementById('aiNotification');
+    if (notification) {
+        notification.classList.remove('show');
     }
 }
 
@@ -274,12 +538,37 @@ function renderAiConfigList() {
         const maskedKey = ai.apiKey
             ? ai.apiKey.slice(0, 5) + '*'.repeat(Math.max(0, ai.apiKey.length - 5))
             : '';
+        // Generar información de limites si está disponible
+        const limitsInfo = (ai.rpm || ai.tpm || ai.rpd) ? 
+            `<div class="ai-limits">
+                <small>
+                    ${ai.rpm ? `RPM: ${ai.rpm}` : ''} 
+                    ${ai.tpm ? `• TPM: ${ai.tpm.toLocaleString()}` : ''} 
+                    ${ai.rpd ? `• RPD: ${ai.rpd}` : ''}
+                </small>
+            </div>` : '';
+
+        // Generar descripción si está disponible
+        const descriptionInfo = ai.description ? 
+            `<div class="ai-description">
+                <small>${escapeHtml(ai.description)}</small>
+            </div>` : '';
+
+        // Generar capacidades si están disponibles
+        const capabilitiesInfo = ai.capabilities && ai.capabilities.length > 0 ? 
+            `<div class="ai-capabilities">
+                <small><strong>Capacidades:</strong> ${ai.capabilities.map(cap => `<span class="capability-tag">${escapeHtml(cap)}</span>`).join('')}</small>
+            </div>` : '';
+
         div.innerHTML = `
             <div class="ai-item-header">
                 <span class="ai-item-title">${escapeHtml(ai.name)}</span>
                 <input type="radio" name="selectedAi" class="ai-item-select" value="${ai.id}" ${ai.id === selectedAiId ? 'checked' : ''} title="Seleccionar IA">
                 <button type="button" class="ai-item-remove" data-idx="${idx}" title="Eliminar IA" ${aiConfigs.length === 1 ? 'disabled' : ''}>✕</button>
             </div>
+            ${limitsInfo}
+            ${descriptionInfo}
+            ${capabilitiesInfo}
             <label>Nombre:
                 <input type="text" class="ai-name" value="${escapeHtml(ai.name)}" data-idx="${idx}" autocomplete="off">
             </label>
@@ -557,13 +846,14 @@ function addMessage(type, content, generatedCode = null, save = true, messageId 
     const messageElement = document.createElement('div');
     messageElement.className = `message ${type} fade-in`;
 
-    // Detectar mensaje de error IA
+    // Detectar mensaje de error IA (ambos tipos)
     let isError = false;
     let retryHtml = '';
     if (
         type === 'ai' &&
         typeof content === 'string' &&
-        content.trim().startsWith('Lo siento, ha ocurrido un error al generar la página web')
+        (content.trim().startsWith('Lo siento, ha ocurrido un error al generar la página web') ||
+         content.trim().startsWith('Lo siento, no pude procesar tu solicitud en este momento'))
     ) {
         isError = true;
         // retryData: { prompt }
@@ -571,8 +861,10 @@ function addMessage(type, content, generatedCode = null, save = true, messageId 
             ? retryData.prompt
             : (getCurrentChat()?.messages?.slice().reverse().find(m => m.type === 'user')?.content || '');
         retryHtml = `
-            <div style="margin-top:0.5rem;">
-                <button class="action-btn" onclick="window.retryGenerateMessage('${messageId}')">Volver a Generar</button>
+            <div style="margin-top:0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="action-btn" onclick="window.retryGenerateMessage('${messageId}')" title="Intentar nuevamente">
+                    🔄 Reenviar
+                </button>
             </div>
         `;
         // Guardar el prompt original en el DOM para el reintento
@@ -828,6 +1120,9 @@ const webKeywords =
 
 /* ================= 100 frases mal escritas/informales ================= */
 "crea pag web",
+"has",
+"as",
+"az",
 "haz pag",
 "genera web",
 "diseña sitio",
@@ -973,7 +1268,7 @@ const webKeywords =
 "programa sitio",
 "web app pro",
 "web pro",
-"landing page",
+
 "pag pro",
 "web pro",
 "pagina interactiva",
@@ -1003,7 +1298,7 @@ const webKeywords =
 "web moderna",
 "landing pro",
 "portal",
-"web",
+
 "pagina",
 "site",
 "web app",
@@ -1011,9 +1306,8 @@ const webKeywords =
 "pagina",
 "web pro",
 "landing page",
-"web",
-"app",
-"pag"
+
+"app"
 
 
 
@@ -1055,7 +1349,12 @@ const webKeywords =
 
 
     // Palabras clave técnicas
-    const techKeywords = ['html', 'css', 'javascript', 'landing page', 'portfolio', 'tienda online', 'ecommerce', 'dashboard'];
+    const techKeywords = ['html', 'css', 'javascript', 'landing page', 'portfolio', 'dashboard', 
+        'aplicacion', 'app', 'formulario', 'calculadora', 'juego', 'quiz', 'encuesta', 'galeria', 'slider', 'carrusel', 
+        'login', 'registro', 'chat', 'calendario', 'reloj', 'contador', 'cronometro', 'timer', 'todolist', 'lista de tareas',
+        'blog', 'navbar', 'menu', 'modal', 'popup', 'accordion', 'tabs', 'cards', 'grid', 'tabla', 'chart', 'grafico',
+        'mapa', 'video', 'audio', 'slideshow', 'testimonios', 'pricing', 'contacto', 'bootstrap', 'react', 'vue',
+        'sistema', 'plataforma', 'herramienta', 'utilidad', 'generador', 'convertidor', 'editor', 'visualizador'];
 
     // Verificar si contiene frases específicas de generación web
     const hasWebPhrase = webKeywords.some(phrase => lowerPrompt.includes(phrase));
@@ -1183,7 +1482,9 @@ async function sendMessage(customPrompt) {
         } catch (error) {
             hideLoading();
             console.error('Error:', error);
-            addMessage('ai', 'Lo siento, no pude procesar tu solicitud en este momento.');
+            // Pasar el prompt original para el botón de reintentar
+            const errorMessage = error.message || 'Lo siento, no pude procesar tu solicitud en este momento.';
+            addMessage('ai', errorMessage, null, true, null, null, { prompt: content });
         }
 
         isGenerating = false;
@@ -1196,11 +1497,8 @@ async function generateWebpage(prompt) {
     // Siempre recarga userInfo antes de generar el prompt
     loadUserInfo();
 
-    // Obtener IA seleccionada
+    // Ya no necesitamos obtener IA específica aquí, el failover lo maneja
     loadAiConfigs();
-    const ai = aiConfigs.find(a => a.id === selectedAiId) || aiConfigs[0];
-    const API_URL = ai.url;
-    const API_KEY = ai.apiKey;
 
     // Obtener historial de mensajes del chat current (solo texto, sin código generado)
     const chat = getCurrentChat();
@@ -1301,23 +1599,61 @@ async function generateWebpage(prompt) {
 
       //================================================ Segunda peticion ==========================================
 systemPrompt = `
-(Puedes utilizar esto: (OPCIONAL)
-Contenido  usando Markdown:  
-- **Negritas** → **texto**  
-- *Cursivas* → *texto*  
-- Listas → - o 1.  
-- Encabezados → #, ##, ###  
 
-INSTRUCCIONES:
+INSTRUCCIONES AVANZADAS PARA MODIFICACIÓN:
 - El USUARIO NECESITA HACER ESTE CAMBIO: ${prompt}
 - TU CÓDIGO QUE GENERASTE ANTERIORMENTE: (ver abajo)
-- Haz SOLO los cambios necesarios en el código HTML anterior según la nueva petición del usuario.
-- Usa un diseño moderno y profesional, responsive y optimizado para dispositivos móviles (mobile-first)
-- El código debe ser funcional y listo para abrir como archivo .html
-- Responde primero con una frase corta (máx. 50 palabras) que resuma el cambio realizado
-- Deja una línea en blanco después de la frase y pega el código HTML completo actualizado
-- No expliques nada más, solo la frase corta y el código actualizado
-- Todo el contenido de texto debe estar en español
+- Modifica el código anterior agregando funcionalidad avanzada según la petición
+- Implementa características interactivas, validaciones, animaciones cuando sea apropiado
+- Mantén diseño moderno, responsive y mobile-first con mejoras visuales
+- El código debe ser completamente funcional y probado
+- Responde con una frase corta (máx. 50 palabras) que resuma la mejora, luego deja una línea en blanco y pega el código HTML completo actualizado
+- Todo el contenido debe estar en español
+
+NAVEGACIÓN AVANZADA OBLIGATORIA:
+- SIEMPRE implementa scroll suave para todos los enlaces internos con fragmentos (#section)
+- Usa behavior: 'smooth' en JavaScript para navegación fluida
+- Previene comportamiento defectuoso de enlaces con event.preventDefault() cuando sea necesario
+- Implementa navegación robusta que funcione correctamente en dominios como Replit
+- Asegura que los enlaces #features, #about, etc. naveguen suavemente a las secciones correspondientes
+- Incluye JavaScript para manejar clics en enlaces de navegación interna de forma profesional
+- NO uses simplemente href="#section" sin JavaScript de soporte - siempre agrega lógica de scroll suave
+
+NUEVAS CAPACIDADES QUE PUEDES AGREGAR:
+- Validaciones de formularios en tiempo real
+- Efectos visuales y animaciones suaves
+- Funcionalidad de búsqueda y filtros
+- Modals, tooltips, notificaciones
+- Persistencia con localStorage
+- Interactividad avanzada con JavaScript
+- Componentes dinámicos y responsivos
+- Integración de librerías externas vía CDN (Bootstrap, Chart.js, etc)
+- IMPORTANTE: Solo usar librerías que funcionen en archivos HTML únicos
+- Evitar frameworks complejos, usar JavaScript vanilla o librerías simples
+- VALIDACIÓN OBLIGATORIA: El código HTML debe ser completamente funcional y sin errores
+- Incluir todas las dependencias necesarias vía CDN cuando sea requerido
+- Probar funcionalidad JavaScript para asegurar que funcione perfectamente
+- Agregar comentarios explicativos en código JavaScript complejo
+
+IMÁGENES EN RESPUESTAS - USO OBLIGATORIO DE URLS REALES:
+- SIEMPRE usa URLs reales para imágenes, NUNCA texto de ejemplo como "URL de la imagen"
+- Sintaxis correcta: ![Descripción](https://picsum.photos/400/300)
+- URLs recomendadas: https://picsum.photos/ancho/alto o https://via.placeholder.com/300x200
+- PROHIBIDO escribir texto placeholder como "URL de la imagen" o "enlace-aquí"
+- SIEMPRE verifica que las URLs funcionen y sean accesibles
+- Ejemplo CORRECTO: ![Producto](https://picsum.photos/300/200)
+- Ejemplo INCORRECTO: ![Producto](URL de la imagen)
+
+
+
+NAVEGACIÓN ESPECIALIZADA REQUERIDA:
+- Implementa scroll suave OBLIGATORIO para todos los enlaces de navegación interna
+- Usa scrollIntoView({behavior: 'smooth'}) para navegación fluida entre secciones
+- Maneja eventos de clic en menús para prevenir comportamiento defectuoso
+- Incluye offset para headers fijos cuando sea necesario
+- Asegura navegación funcional en entornos como Replit con dominios complejos
+- Implementa indicadores visuales de sección activa en la navegación
+- Código ejemplo requerido para navegación: document.querySelectorAll('a[href^="#"]').forEach(anchor => {...})
 
 CÓDIGO ANTERIOR:
 ${lastAICode ? lastAICode : '(No hay código anterior)'}
@@ -1335,21 +1671,54 @@ ${historyText ? historyText : '(Sin historial previo)'}
 
 //============================================== Primer mensaje: prompt normal ===============================================
 systemPrompt = `
-(Puedes utilizar esto: (OPCIONAL)
-Contenido  usando Markdown:  
-- **Negritas** → **texto**  
-- *Cursivas* → *texto*  
-- Listas → - o 1.  
-- Encabezados → #, ##, ###  
 
 
-INSTRUCCIONES:
-- Genera un código HTML completo con CSS integrado y JavaScript si es necesario.
-- Usa un diseño moderno y profesional, responsive y optimizado para móviles (mobile-first)
-- Todo el código debe ser funcional y listo para abrir como archivo .html
-- Responde primero con una frase corta (máx. 35 palabras) que resuma la página, luego deja una línea en blanco y pega el código HTML completo
-- No expliques nada más, solo la frase corta y el código
-- Todo el contenido de texto debe estar en español
+INSTRUCCIONES AVANZADAS PARA IA DE DESARROLLO WEB:
+- Genera un código HTML completo con CSS integrado y JavaScript avanzado cuando sea necesario
+- Usa diseño moderno, profesional, responsive y mobile-first con animaciones suaves
+- Implementa funcionalidad interactiva completa según lo solicitado
+- Todo el código debe ser funcional, probado y listo para usar
+- Responde con una frase corta (máx. 35 palabras) que resuma la funcionalidad, luego deja una línea en blanco y pega el código HTML completo
+- Todo el contenido debe estar en español
+
+NAVEGACIÓN AVANZADA OBLIGATORIA:
+- SIEMPRE implementa navegación suave para enlaces internos (#section)
+- Incluye JavaScript para scroll suave usando scrollIntoView({behavior: 'smooth'})
+- Maneja eventos de navegación correctamente para evitar bugs en dominios Replit
+- Implementa offset automático para headers fijos
+- Previene comportamiento defectuoso con event.preventDefault() en navegación interna
+- Asegura que menús de navegación funcionen perfectamente sin "bugear" la página
+- NO uses enlaces simples href="#section" - SIEMPRE agrega lógica JavaScript de soporte
+
+CAPACIDADES AVANZADAS QUE PUEDES USAR:
+- Formularios con validación en tiempo real y envío
+- Aplicaciones interactivas (calculadoras, juegos, quizzes)
+- Sistemas de login/registro con localStorage
+- Carruseles, galerías, modals y componentes dinámicos
+- Charts y gráficos usando Chart.js o Canvas
+- Mapas interactivos, calendarios, cronómetros
+- Sistemas CRUD (crear, leer, actualizar, eliminar)
+- APIs externas, geolocalización, cámara
+- Animaciones CSS/JS, efectos visuales
+- Bootstrap, Tailwind o CSS Grid/Flexbox avanzado
+- Funciones de búsqueda, filtros, ordenamiento
+- Modo oscuro/claro, temas personalizables
+- Drag & drop, gestos táctiles
+- Notificaciones, alerts personalizados
+- Sistemas de puntuación, progreso
+- Generadores, convertidores, herramientas
+
+
+
+NAVEGACIÓN PROFESIONAL ESPECIALIZADA:
+- Scroll suave automático para todos los enlaces de navegación interna
+- Manejo inteligente de fragmentos URL (#features, #about, etc.)
+- JavaScript robusto para navegación que funciona en cualquier dominio
+- Indicadores visuales de sección activa (highlight en menú)
+- Navegación sin errores que previene "bugs" de redirección
+- Código estándar: document.querySelector('a[href="#section"]').addEventListener('click', smoothScroll)
+- Offset automático para headers pegajosos (sticky headers)
+- Navegación completamente funcional y profesional sin glitches
 
 INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
 ${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
@@ -1418,8 +1787,11 @@ Responde con una frase corta y el archivo HTML completo:
 
     }
 
-    try {
-        const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+    // Usamos el sistema de failover para hacer la llamada a la API
+    const apiCall = async (ai) => {
+        console.log(`🌐 Llamando a API generateWebpage: ${ai.name}`);
+
+        const response = await fetch(`${ai.url}?key=${ai.apiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1473,7 +1845,7 @@ Responde con una frase corta y el archivo HTML completo:
         if (!response.ok) {
             const errorText = await response.text();
             console.error('API Error:', errorText);
-            throw new Error(`Error HTTP: ${response.status}`);
+            throw new Error(`Error HTTP: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
@@ -1485,18 +1857,61 @@ Responde con una frase corta y el archivo HTML completo:
 
         const cleanCode = code.replace(/```html|```/g, '').trim();
 
+        // Validación mejorada para HTML funcional
+        if (cleanCode.length < 100) {
+            throw new Error(`Respuesta muy corta (${cleanCode.length} caracteres). La IA debe generar más contenido.`);
+        }
+
+        if (!cleanCode.toLowerCase().includes('<html')) {
+            throw new Error('HTML inválido: Falta etiqueta <html> en la respuesta.');
+        }
+
+        if (!cleanCode.toLowerCase().includes('<head') || !cleanCode.toLowerCase().includes('<body')) {
+            throw new Error('HTML incompleto: Faltan etiquetas <head> y/o <body> necesarias.');
+        }
+
+        // Verificar que tenga contenido real en el body
+        const bodyMatch = cleanCode.match(/<body[^>]*>(.*?)<\/body>/is);
+        if (!bodyMatch || bodyMatch[1].trim().length < 30) {
+            throw new Error('HTML sin contenido: El <body> está vacío o tiene muy poco contenido.');
+        }
+
         // Extrae la primera línea como mensaje corto, el resto como código
-        const [firstLine, ...rest] = cleanCode.split('\n');
-        const codeHtml = rest.join('\n').trim();
+        const lines = cleanCode.split('\n');
+        let firstLine = lines[0] || 'Página web generada';
+        let codeHtml = '';
+
+        if (lines.length > 1) {
+            // Respuesta multilínea: primera línea = mensaje, resto = código
+            codeHtml = lines.slice(1).join('\n').trim();
+        } else {
+            // Respuesta de una sola línea: verificar si es solo código HTML
+            if (cleanCode.toLowerCase().includes('<html')) {
+                firstLine = 'Página web generada';
+                codeHtml = cleanCode;
+            } else {
+                throw new Error(`Respuesta inválida: no se pudo extraer código HTML válido`);
+            }
+        }
+
+        // Verificar que el código extraído sea funcional
+        if (!codeHtml || codeHtml.length < 50) {
+            throw new Error('Código HTML extraído insuficiente: Necesita más contenido para ser funcional.');
+        }
+
+        // Verificar estructura HTML básica
+        if (!codeHtml.toLowerCase().includes('<html') || !codeHtml.toLowerCase().includes('</html>')) {
+            throw new Error('Estructura HTML incompleta: Faltan etiquetas de apertura/cierre <html>.');
+        }
 
         return {
             code: codeHtml,
             message: firstLine.trim()
         };
-    } catch (error) {
-        console.error('Error generating webpage:', error);
-        throw new Error('Error al generar la página web: ' + error.message);
-    }
+    };
+
+    // Llamar al sistema de failover
+    return await makeApiCallWithFailover(apiCall, 3);
 }
 
 // Función para generar respuesta de chat normal
@@ -1504,9 +1919,6 @@ async function generateChatResponse(prompt) {
     loadUserInfo();
 
     loadAiConfigs();
-    const ai = aiConfigs.find(a => a.id === selectedAiId) || aiConfigs[0];
-    const API_URL = ai.url;
-    const API_KEY = ai.apiKey;
 
     const chat = getCurrentChat();
     let historyText = '';
@@ -1546,15 +1958,81 @@ async function generateChatResponse(prompt) {
 Eres un asistente de IA TU NOMBRE ES DevCenterIA que responde normalmente a las preguntas del usuario. Responde de forma clara y concisa a cualquier pregunta o conversación general.
 
 
-(Puedes utilizar esto: (OPCIONAL)
-Contenido  usando Markdown:  
-- **Negritas** → **texto**  
-- *Cursivas* → *texto*  
-- Listas → - o 1.  
-- Encabezados → #, ##, ###  
+MARKDOWN COMPLETO - USALO ACTIVAMENTE EN TUS RESPUESTAS:
+Tienes acceso completo a Markdown. USALO para hacer respuestas mas atractivas y organizadas:
+
+TEXTO Y FORMATO:
+- **Texto en negrita** para conceptos importantes
+- *Texto en cursiva* para enfasis
+- ***Texto en negrita y cursiva*** para muy importante
+- ~~Texto tachado~~ para contenido eliminado
+- Codigo inline entre backticks para terminos tecnicos
+- Texto normal sin formato
+
+LISTAS Y ORGANIZACION:
+- Listas sin orden con guiones
+  - Elemento 1
+  - Elemento 2
+    - Sub-elemento A
+    - Sub-elemento B
+- Listas numeradas:
+  1. Primer punto
+  2. Segundo punto
+     1. Sub-punto 2.1
+     2. Sub-punto 2.2
+
+LISTAS DE TAREAS:
+- [x] Tarea completada
+- [ ] Tarea pendiente
+- [x] Otra tarea terminada
+- [ ] Por hacer
+
+TITULOS Y SECCIONES:
+# Titulo Principal (H1)
+## Titulo Secundario (H2)  
+### Subtitulo (H3)
+#### Seccion menor (H4)
+
+ENLACES:
+- [Texto del enlace](https://ejemplo.com)
+- [Google](https://google.com)
+- Enlaces automaticos: https://github.com
+
+
+CODIGO:
+- Codigo inline: backticks con const variable = "valor"
+- Bloques de codigo con triple backticks:
+  - javascript, html, css, python, etc.
+  - function ejemplo() { return "Hola mundo"; }
+
+TABLAS:
+| Columna 1 | Columna 2 | Columna 3 |
+|-----------|-----------|-----------|
+| Dato A    | Dato B    | Dato C    |
+| Valor 1   | Valor 2   | Valor 3   |
+
+CITAS Y DESTACADOS:
+> Esta es una cita importante
+> que puede ocupar multiples lineas
+
+LINEAS HORIZONTALES:
+Usa --- para separar secciones
+
+INSTRUCCIONES OBLIGATORIAS:
+- SIEMPRE usa Markdown para organizar respuestas largas
+- Usa titulos ## y ### para estructurar informacion
+- Aplica **negritas** para conceptos importantes
+- Usa listas para enumerar caracteristicas o pasos
+- Incluye codigo inline para terminos tecnicos
+- Agrega enlaces utiles cuando sea relevante
+- Aplica > citas para destacar informacion clave
+- Usa tablas para comparar datos o caracteristicas
 
 
 
+IMAGENES (USA URLS REALES):
+![Imagen Grande](https://picsum.photos/400/300)
+![Imgen Chica](https://picsum.photos/100/100)
 
 
 INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
@@ -1565,7 +2043,7 @@ USUARIO SOLICITA: ${prompt}
 Responde de forma clara y concisa, sin generar código ni páginas web.
 
 
-  
+
 
 `;
 
@@ -1578,8 +2056,11 @@ Responde de forma clara y concisa, sin generar código ni páginas web.
 
 
 
-    try {
-        const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+    // Usamos el sistema de failover para hacer la llamada a la API
+    const apiCall = async (ai) => {
+        console.log(`🌐 Llamando a API generateChatResponse: ${ai.name}`);
+
+        const response = await fetch(`${ai.url}?key=${ai.apiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1638,9 +2119,15 @@ generationConfig: {
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
         return text.trim();
+    };
+
+    // Llamar al sistema de failover
+    try {
+        return await makeApiCallWithFailover(apiCall, 3);
     } catch (error) {
         console.error('Error generating chat response:', error);
-        return 'Lo siento, no pude procesar tu solicitud en este momento.';
+        // Lanzar error para que sendMessage lo maneje en el catch con retryData
+        throw new Error('Lo siento, no pude procesar tu solicitud en este momento.');
     }
 }
 
@@ -1712,13 +2199,107 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
-// Loading
+
+
+
+
+
+
+
+
+// Loading Mejorado
+// Variables para animación de loading
+let loadingInterval = null;
+let dotInterval = null;
+const loadingTexts = [
+  "Cargando",
+  "Pensando",
+  "Procesando",
+  "Analizando",
+  "Calculando",
+  "Evaluando",
+  "Revisando",
+  "Comprobando",
+  "Estudiando",
+  "Respondiendo"
+];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function showLoading() {
     elements.loading.classList.add('show');
+
+    // Inicializar texto animado
+    const loadingTextEl = document.getElementById('loadingText');
+    let textIndex = 0;
+    let dotCount = 0;
+
+    if (loadingTextEl) {
+        // Función para actualizar puntos
+        const updateDots = () => {
+            if (!elements.loading.classList.contains('show')) {
+                return;
+            }
+
+            dotCount = (dotCount + 1) % 4;
+            let dots;
+            if (dotCount === 0) dots = '.';
+            else if (dotCount === 1) dots = '..';
+            else if (dotCount === 2) dots = '...';
+            else dots = '';
+
+            const baseText = loadingTexts[textIndex];
+            loadingTextEl.textContent = baseText + dots;
+        };
+
+        // Inicializar con primer texto
+        updateDots();
+
+        // Cambiar texto base cada 3 segundos
+        loadingInterval = setInterval(() => {
+            textIndex = (textIndex + 1) % loadingTexts.length;
+            dotCount = 0; // Reset dots
+            updateDots();
+        }, 3000);
+
+        // Animar puntos cada 400ms
+        dotInterval = setInterval(updateDots, 400);
+    }
 }
 
 function hideLoading() {
     elements.loading.classList.remove('show');
+
+    // Limpiar intervalos
+    if (loadingInterval) {
+        clearInterval(loadingInterval);
+        loadingInterval = null;
+    }
+    if (dotInterval) {
+        clearInterval(dotInterval);
+        dotInterval = null;
+    }
 }
 
 // Utilidades
@@ -1733,36 +2314,158 @@ function escapeHtml(text) {
 }
 
 function renderMarkdown(text) {
-    // Escapar HTML primero para seguridad
-    let html = escapeHtml(text);
+    if (!text) return '';
+    
+    let html = text.toString();
 
-    // Convertir encabezados (# ## ###)
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+    // PASO 1: Procesar código (sin protección compleja)
+    // Bloques de código ```
+    html = html.replace(/```([\s\S]*?)```/g, (match, code) => {
+        return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
+    });
 
-    // Convertir negritas (**texto**)
+    // Código inline ` (simple y directo)
+    html = html.replace(/`([^`]+)`/g, (match, code) => {
+        return `<code>${escapeHtml(code)}</code>`;
+    });
+
+    // Paso temporal: marcar URLs de imagen para procesamiento posterior
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'heic', 'heif', 'svg', 'eps', 'pdf', 'ico', 'apng', 'jfif', 'pjpeg'];
+    
+    imageExtensions.forEach(ext => {
+        const imageUrlPattern = new RegExp(`(https://[^\\s<>"'\\[\\]()\\n\\r]+\\.${ext})`, 'gi');
+        html = html.replace(imageUrlPattern, (match) => {
+            return `__IMAGEN_AUTO_${Buffer.from(match).toString('base64')}_IMAGEN_AUTO__`;
+        });
+    });
+
+    // PASO 2: Escapar HTML restante (después del código)
+    const tempDiv = document.createElement('div');
+    const parts = html.split(/(<pre><code>[\s\S]*?<\/code><\/pre>|<code>.*?<\/code>|__IMAGEN_AUTO_[A-Za-z0-9+/=]+_IMAGEN_AUTO__)/);
+    
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        if (!part.startsWith('<pre><code>') && !part.startsWith('<code>') && !part.startsWith('__IMAGEN_AUTO_')) {
+            tempDiv.textContent = part;
+            parts[i] = tempDiv.innerHTML;
+        }
+    }
+    html = parts.join('');
+
+    // PASO 3: Procesar elementos de Markdown
+    
+    // Líneas horizontales PRIMERO
+    html = html.replace(/^(---|___)\s*$/gim, '<hr>');
+    html = html.replace(/^\*\*\*\s*$/gim, '<hr>');
+
+    // (URLs de imagen ya procesadas antes del escape HTML)
+
+    // Enlaces e imágenes de Markdown  
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
+    html = html.replace(/\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    // Encabezados
+    html = html.replace(/^######\s+(.*$)/gim, '<h6>$1</h6>');
+    html = html.replace(/^#####\s+(.*$)/gim, '<h5>$1</h5>');
+    html = html.replace(/^####\s+(.*$)/gim, '<h4>$1</h4>');
+    html = html.replace(/^###\s+(.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^##\s+(.*$)/gim, '<h2>$1</h2>');
+    html = html.replace(/^#\s+(.*$)/gim, '<h1>$1</h1>');
+
+    // Formato de texto (orden específico)
+    html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-    // Convertir cursivas (*texto*)
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+    html = html.replace(/~~(.*?)~~/g, '<del>$1</del>');
 
-    // Convertir bloques de código (```)
-    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+    // Citas
+    html = html.replace(/^>\s+(.*$)/gim, '<blockquote>$1</blockquote>');
 
-    // Convertir código inline (`codigo`)
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // PASO 4: Listas simplificadas pero robustas
+    const lines = html.split('\n');
+    const result = [];
+    let listStack = []; // Seguir el estado de las listas
 
-    // Convertir listas (- item)
-    html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (/^[\-\*]\s+/.test(line)) {
+            // Lista desordenada
+            if (listStack.length === 0 || listStack[listStack.length - 1] !== 'ul') {
+                // Cerrar lista ordenada si existe
+                if (listStack.length > 0 && listStack[listStack.length - 1] === 'ol') {
+                    result.push('</ol>');
+                    listStack.pop();
+                }
+                result.push('<ul>');
+                listStack.push('ul');
+            }
+            result.push('<li>' + line.replace(/^[\-\*]\s+/, '') + '</li>');
+        }
+        else if (/^\d+\.\s+/.test(line)) {
+            // Lista ordenada
+            if (listStack.length === 0 || listStack[listStack.length - 1] !== 'ol') {
+                // Cerrar lista desordenada si existe
+                if (listStack.length > 0 && listStack[listStack.length - 1] === 'ul') {
+                    result.push('</ul>');
+                    listStack.pop();
+                }
+                result.push('<ol>');
+                listStack.push('ol');
+            }
+            result.push('<li>' + line.replace(/^\d+\.\s+/, '') + '</li>');
+        }
+        else {
+            // Cerrar cualquier lista abierta
+            while (listStack.length > 0) {
+                const listType = listStack.pop();
+                result.push(`</${listType}>`);
+            }
+            result.push(line);
+        }
+    }
 
-    // Convertir listas numeradas (1. item)
-    html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>');
+    // Cerrar listas restantes
+    while (listStack.length > 0) {
+        const listType = listStack.pop();
+        result.push(`</${listType}>`);
+    }
 
-    // Convertir saltos de línea simples a <br>
-    html = html.replace(/\n/g, '<br>');
+    html = result.join('\n');
+
+    // PASO 5: Párrafos
+    const blocks = html.split(/\n\s*\n/);
+    const finalBlocks = blocks.map(block => {
+        block = block.trim();
+        if (!block) return '';
+        
+        // No envolver elementos de bloque
+        if (/^<(h[1-6]|blockquote|ul|ol|pre|hr|div)/.test(block)) {
+            return block.replace(/\n/g, '<br>');
+        }
+        
+        // Envolver texto en párrafos
+        return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
+    });
+
+    html = finalBlocks.filter(block => block).join('\n\n');
+
+    // PASO FINAL: Convertir marcadores de imagen de vuelta a elementos HTML
+    html = html.replace(/__IMAGEN_AUTO_([A-Za-z0-9+/=]+)_IMAGEN_AUTO__/g, (match, base64Url) => {
+        try {
+            const url = Buffer.from(base64Url, 'base64').toString('utf-8');
+            return `<img src="${url}" alt="Imagen" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block;">`;
+        } catch (e) {
+            return match; // Si hay error, devolver el marcador original
+        }
+    });
+
+    // Limpieza final
+    html = html.replace(/<p><\/p>/g, '');
+    html = html.replace(/<p>\s*<\/p>/g, '');
 
     return html;
 }
@@ -1905,6 +2608,7 @@ window.retryGenerateMessage = async function (messageId) {
     }
 };
 
+
 // --- Corrige la sincronización del input de mensajes por chat (el input no existe en el HTML) ---
 // Puedes eliminar el bloque que sincroniza el input 'maxMessagesInput' o agregar el input en el HTML si lo necesitas.
 // Si decides eliminarlo, borra este bloque:
@@ -1977,313 +2681,5 @@ function showPreview(messageId) {
     window.currentCode = message.generatedCode;
 }
 
-// --- Usa canSendMessage para bloquear el envío si se supera el límite ---
-async function sendMessage(customPrompt) {
-    // --- NUEVO: Bloquea si se alcanza el límite de mensajes y muestra tiempo restante ---
-    if (!canSendMessage()) {
-        // Calcular tiempo restante
-        const chat = getCurrentChat();
-        let timeMsg = '';
-        if (chat && chat.messages && chat.messages.length > 0) {
-            const firstMsgTime = new Date(chat.messages[0].timestamp || chat.messages[0].createdAt || chat.createdAt);
-            const now = new Date();
-            const diffMs = now - firstMsgTime;
-            const diffMinutes = diffMs / (1000 * 60);
-            const remaining = Math.max(0, RESET_LIMIT_MINUTES - diffMinutes);
-            const min = Math.floor(remaining);
-            const sec = Math.floor((remaining - min) * 60);
-            timeMsg = ` Intenta de nuevo en ${min}m ${sec < 10 ? '0' : ''}${sec}s.`;
-        }
-        alert('Has alcanzado el límite de mensajes permitidos en esta conversación.' + timeMsg);
-        return;
-    }
-    const content = typeof customPrompt === 'string'
-        ? customPrompt
-        : elements.messageInput.value.trim();
-    if (!content || isGenerating) return;
+// Función duplicada eliminada - funcionalidad movida a sendMessage principal
 
-    if (!customPrompt) {
-        elements.messageInput.value = '';
-        elements.messageInput.style.height = 'auto';
-        handleInputChange();
-    }
-
-    const welcomeMessage = elements.messages.querySelector('.welcome-message');
-    if (welcomeMessage) {
-        welcomeMessage.remove();
-    }
-
-    addMessage('user', content);
-
-    // Verificar si el prompt es para generar una página web
-    if (isWebGenerationRequest(content)) {
-        // Generar página web
-        showLoading();
-        isGenerating = true;
-        handleInputChange();
-
-        try {
-            const result = await generateWebpage(content);
-            hideLoading();
-            const messageId = addMessage('ai', result.message, result.code);
-
-            // Actualizar el nombre del chat si es el primer mensaje real
-            const chat = getCurrentChat();
-            if (chat && chat.messages.length <= 2) {
-                const newName = generateChatName(content);
-                chat.name = newName;
-                updateCurrentChat({});
-                renderSidebar();
-            }
-        } catch (error) {
-            hideLoading();
-            console.error('Error:', error);
-            // Pasar el prompt original para el botón de reintentar
-            addMessage('ai', 'Lo siento, ha ocurrido un error al generar la página web. Por favor, inténtalo de nuevo.', null, true, null, null, { prompt: content });
-        }
-
-        isGenerating = false;
-        handleInputChange();
-    } else {
-        // Generar respuesta de chat normal
-        showLoading();
-        isGenerating = true;
-        handleInputChange();
-
-        try {
-            const response = await generateChatResponse(content);
-            hideLoading();
-            addMessage('ai', response);
-        } catch (error) {
-            hideLoading();
-            console.error('Error:', error);
-            addMessage('ai', 'Lo siento, no pude procesar tu solicitud en este momento.');
-        }
-
-        isGenerating = false;
-        handleInputChange();
-    }
-}
-
-// IA y generación de código
-async function generateWebpage(prompt) {
-    // Siempre recarga userInfo antes de generar el prompt
-    loadUserInfo();
-
-    // Obtener IA seleccionada
-    loadAiConfigs();
-    const ai = aiConfigs.find(a => a.id === selectedAiId) || aiConfigs[0];
-    const API_URL = ai.url;
-    const API_KEY = ai.apiKey;
-
-    // Obtener historial de mensajes del chat current (solo texto, sin código generado)
-    const chat = getCurrentChat();
-    let historyText = '';
-    if (chat && chat.messages && chat.messages.length > 0) {
-        historyText = chat.messages
-            .filter(m => m.type === 'user' || m.type === 'ai')
-            .map(m => {
-                if (m.type === 'user') {
-                    return `Usuario: ${m.content}`;
-                } else if (m.type === 'ai') {
-                    // Solo incluir el mensaje, no el código generado
-                    return `DevCenter: ${m.content}`;
-                }
-                return '';
-            })
-            .join('\n');
-    }
-
-    // Información del usuario para IA
-    let userInfoText = '';
-    if (userInfo && (userInfo.name || userInfo.birth || userInfo.email || userInfo.custom)) {
-        userInfoText = [
-            userInfo.name ? `Nombre: ${userInfo.name}` : '',
-            userInfo.birth ? `Fecha de nacimiento: ${userInfo.birth}` : '',
-            userInfo.email ? `Correo: ${userInfo.email}` : '',
-            userInfo.custom ? `Información personalizada: ${userInfo.custom}` : ''
-        ].filter(Boolean).join('\n');
-    }
-
-    // PROMPT especial si es el segundo mensaje o más
-    let systemPrompt = '';
-    const userMessagesCount = chat && chat.messages
-        ? chat.messages.filter(m => m.type === 'user').length
-        : 0;
-
-    if (userMessagesCount >= 2) {
-        // Busca el último código generado por la IA
-        const lastAICode = chat.messages
-            .slice()
-            .reverse()
-            .find(m => m.type === 'ai' && m.generatedCode)?.generatedCode || '';
-
-
-
-
-
-
-
-
-
-
-
-
-
-      //================================================ Segunda peticion ==========================================
-systemPrompt = `
-(Puedes utilizar esto: (OPCIONAL)
-Contenido  usando Markdown:  
-- **Negritas** → **texto**  
-- *Cursivas* → *texto*  
-- Listas → - o 1.  
-- Encabezados → #, ##, ###  
-INSTRUCCIONES:
-- El USUARIO NECESITA HACER ESTE CAMBIO: ${prompt}
-- TU CÓDIGO QUE GENERASTE ANTERIORMENTE: (ver abajo)
-- Haz SOLO los cambios necesarios en el código HTML anterior según la nueva petición del usuario.
-- Usa un diseño moderno y profesional, responsive y optimizado para dispositivos móviles (mobile-first)
-- El código debe ser funcional y listo para abrir como archivo .html
-- Responde primero con una frase corta (máx. 50 palabras) que resuma el cambio realizado
-- Deja una línea en blanco después de la frase y pega el código HTML completo actualizado
-- No expliques nada más, solo la frase corta y el código actualizado
-- Todo el contenido de texto debe estar en español
-
-CÓDIGO ANTERIOR:
-${lastAICode ? lastAICode : '(No hay código anterior)'}
-
-INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
-${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
-
-HISTORIAL DE MENSAJES:
-${historyText ? historyText : '(Sin historial previo)'}
-`;
-
-//=============================================================================================================================
-
-} else {
-
-//============================================== Primer mensaje: prompt normal ===============================================
-systemPrompt = `
-(Puedes utilizar esto: (OPCIONAL)
-Contenido  usando Markdown:  
-- **Negritas** → **texto**  
-- *Cursivas* → *texto*  
-- Listas → - o 1.  
-- Encabezados → #, ##, ###  
-
-INSTRUCCIONES:
-- Genera un código HTML completo con CSS integrado y JavaScript si es necesario.
-- Usa un diseño moderno y profesional, responsive y optimizado para móviles (mobile-first)
-- Todo el código debe ser funcional y listo para abrir como archivo .html
-- Responde primero con una frase corta (máx. 35 palabras) que resuma la página, luego deja una línea en blanco y pega el código HTML completo
-- No expliques nada más, solo la frase corta y el código
-- Todo el contenido de texto debe estar en español
-
-INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
-${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
-
-HISTORIAL DE MENSAJES:
-${historyText ? historyText : '(Sin historial previo)'}
-
-USUARIO SOLICITA: ${prompt}
-
-Responde con una frase corta y el archivo HTML completo:
-`;
-
-//=============================================================================================================================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    }
-
-    try {
-        const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: systemPrompt,
-                            },
-                        ],
-                    },
-                ],
-
-
-
-
-generationConfig: {
-    temperature: TEMPERATURE,
-    topK: TOP_K,
-    topP: TOP_P,
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
-
-
-
-                //generationConfig: {
-                  //  temperature: 0.2,
-                   // topK: 50,
-                   // topP: 0.90,
-                  //  maxOutputTokens: 18000,
-
-
-
-                }
-            }),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API Error:', errorText);
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const code = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        if (!code) {
-            throw new Error('No se pudo generar código HTML');
-        }
-
-        const cleanCode = code.replace(/```html|```/g, '').trim();
-
-        // Extrae la primera línea como mensaje corto, el resto como código
-        const [firstLine, ...rest] = cleanCode.split('\n');
-        const codeHtml = rest.join('\n').trim();
-
-        return {
-            code: codeHtml,
-            message: firstLine.trim()
-        };
-    } catch (error) {
-        console.error('Error generating webpage:', error);
-        throw new Error('Error al generar la página web: ' + error.message);
-    }
-}
