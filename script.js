@@ -342,6 +342,7 @@ function setupDevCenterToolsListeners() {
     const aiStatusBtn = document.getElementById('aiStatusBtn');
     const systemStatsBtn = document.getElementById('systemStatsBtn');
     const devToolsBtn = document.getElementById('devToolsBtn');
+    const clearStorageBtn = document.getElementById('clearStorageBtn');
 
     if (aiStatusBtn) {
         aiStatusBtn.removeEventListener('click', showAiStatus);
@@ -356,6 +357,11 @@ function setupDevCenterToolsListeners() {
     if (devToolsBtn) {
         devToolsBtn.removeEventListener('click', showDevTools);
         devToolsBtn.addEventListener('click', showDevTools);
+    }
+
+    if (clearStorageBtn) {
+        clearStorageBtn.removeEventListener('click', clearAllLocalStorage);
+        clearStorageBtn.addEventListener('click', clearAllLocalStorage);
     }
 }
 
@@ -417,6 +423,50 @@ function showDevTools() {
     devMessage += `• UserAgent: ${navigator.userAgent.substring(0, 50)}...\n`;
 
     alert(devMessage);
+}
+
+function clearAllLocalStorage() {
+    // Verificar que el usuario sea DevCenter (defensa en profundidad)
+    if (!isDevCenterUser()) {
+        alert('❌ Acceso denegado. Esta función solo está disponible para usuarios DevCenter.');
+        return;
+    }
+
+    // Primera confirmación
+    const firstConfirmMessage = `🗑️ ADVERTENCIA: Limpiar localStorage\n\n` +
+        `Esto eliminará TODOS los datos guardados:\n` +
+        `• Todos los chats e historial\n` +
+        `• Configuración de usuario\n` +
+        `• Configuración de IAs\n` +
+        `• Preferencias guardadas\n\n` +
+        `⚠️ Esta acción NO se puede deshacer.\n\n` +
+        `¿Estás seguro de que quieres continuar?`;
+
+    if (confirm(firstConfirmMessage)) {
+        // Segunda confirmación (doble seguridad)
+        const secondConfirmMessage = `⚠️ ÚLTIMA ADVERTENCIA ⚠️\n\n` +
+            `Estás a punto de ELIMINAR PERMANENTEMENTE todos los datos.\n\n` +
+            `Esta es tu última oportunidad para cancelar.\n\n` +
+            `¿REALMENTE quieres borrar TODO el localStorage?`;
+
+        if (confirm(secondConfirmMessage)) {
+            try {
+                // Limpiar todo el localStorage
+                localStorage.clear();
+
+                // Mostrar confirmación
+                alert(`✅ localStorage limpiado exitosamente.\n\nTodos los datos han sido eliminados.\nLa página se recargará automáticamente.`);
+
+                // Recargar la página para reflejar los cambios
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } catch (error) {
+                console.error('Error al limpiar localStorage:', error);
+                alert(`❌ Error al limpiar localStorage:\n${error.message}`);
+            }
+        }
+    }
 }
 
 // Funciones para notificación de IA (solo usuarios DevCenter)
@@ -521,12 +571,7 @@ function setupEventListeners() {
     if (aiConfigBtn) {
         aiConfigBtn.addEventListener('click', () => {
             loadUserInfo();
-            if (
-                userInfo &&
-                userInfo.name === 'Justin' &&
-                typeof userInfo.custom === 'string' &&
-                userInfo.custom.trim() === 'DevCenter'
-            ) {
+            if (isDevCenterUser()) {
                 showAiConfigModal();
             }
         });
@@ -891,7 +936,7 @@ function showWelcomeMessage() {
     elements.messages.innerHTML = `
         <div class="welcome-message fade-in">
             <div class="welcome-icon">🌐</div>
-            <h3>¡Hola! Soy DevCenter</h3>
+            <h3>¡Hola! Soy DevCenter </h3>
             <p>Tu asistente de IA. Puedes chatear conmigo o pedirme que genere páginas web.</p>
         </div>
     `;
@@ -1391,7 +1436,7 @@ const webKeywords =
 "portal",
 "app",
 "web app",
-"pagina",
+"pagia",
 "web app pro",
 "landing",
 "web",
@@ -1417,7 +1462,7 @@ const webKeywords =
 
 "pagina",
 "site",
-"web app",
+"web",
 "web app pro",
 "pagina",
 "web pro",
@@ -1507,6 +1552,15 @@ function adjustTextareaHeight() {
     elements.messageInput.style.height = Math.min(elements.messageInput.scrollHeight, 120) + 'px';
 }
 
+function clearMessageInput() {
+    // Función robusta para limpiar el input sin importar el contexto
+    if (elements.messageInput) {
+        elements.messageInput.value = '';
+        elements.messageInput.style.height = 'auto';
+        handleInputChange();
+    }
+}
+
 function handleSuggestionClick(e) {
     if (e.target.classList.contains('suggestion-btn')) {
         const template = e.target.dataset.template;
@@ -1543,11 +1597,8 @@ async function sendMessage(customPrompt) {
         : elements.messageInput.value.trim();
     if (!content || isGenerating) return;
 
-    if (!customPrompt) {
-        elements.messageInput.value = '';
-        elements.messageInput.style.height = 'auto';
-        handleInputChange();
-    }
+    // SIEMPRE limpiar el input sin importar si es customPrompt o no
+    clearMessageInput();
 
     const welcomeMessage = elements.messages.querySelector('.welcome-message');
     if (welcomeMessage) {
@@ -1726,7 +1777,39 @@ async function generateWebpage(prompt) {
 
 
 
+        // Obtener la fecha actual
+        const ahora = new Date();
 
+        // Día de la semana
+        const diasSemana = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+        const diaSemana = diasSemana[ahora.getDay()];
+
+        // Fecha completa
+        const dia = ahora.getDate().toString().padStart(2, '0');
+        const mes = (ahora.getMonth() + 1).toString().padStart(2, '0'); // Enero = 0
+        const anio = ahora.getFullYear();
+
+        // Hora completa
+        const hora = ahora.getHours().toString().padStart(2,'0');
+        const minuto = ahora.getMinutes().toString().padStart(2,'0');
+        const segundo = ahora.getSeconds().toString().padStart(2,'0');
+
+        // Zona horaria
+        const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+
+        // Obtener información del dispositivo
+        const userAgent = navigator.userAgent.toLowerCase();
+
+        let dispositivo = "Desconocido";
+
+        if(userAgent.includes("mobile") || userAgent.includes("android") || userAgent.includes("iphone")) {
+            dispositivo = "Celular";
+        } else if(userAgent.includes("ipad") || userAgent.includes("tablet")) {
+            dispositivo = "Tablet";
+        } else {
+            dispositivo = "Computadora";
+        }
 
 
 
@@ -1841,9 +1924,9 @@ HISTORIAL DE MENSAJES:
 ${historyText ? historyText : '(Sin historial previo)'}
 
 ${contextualInfo ? `
-🧠 **ANÁLISIS INTELIGENTE ACTIVADO:**
+🧠 ANÁLISIS INTELIGENTE ACTIVADO:
 ${contextualInfo}
-*Utilizo esta información para personalizar las modificaciones con máxima precisión.*
+Utilizo esta información para personalizar las modificaciones con máxima precisión.
 ` : ''}
 `;
 
@@ -1854,49 +1937,49 @@ ${contextualInfo}
 //============================================== Primer mensaje: prompt normal ===============================================
 systemPrompt = `
 
-🚀 **DEVCENTER AI - GENERADOR WEB INTELIGENTE** 🚀
+DEVCENTER AI - GENERADOR WEB INTELIGENTE
 
-Eres un **ARQUITECTO WEB EXPERTO** que crea aplicaciones web modernas, funcionales e innovadoras. Tu especialidad es construir experiencias web completas con código optimizado y diseño profesional.
+Eres un ARQUITECTO WEB EXPERTO que crea aplicaciones web modernas, funcionales e innovadoras. Tu especialidad es construir experiencias web completas con código optimizado y diseño profesional.
 
-## 🎯 **ESPECIFICACIONES TÉCNICAS AVANZADAS**
+🎯 ESPECIFICACIONES TÉCNICAS AVANZADAS
 
-### **ARQUITECTURA WEB MODERNA**
-- **HTML5 semántico** con estructura clean y accesible
-- **CSS3 avanzado** con Flexbox/Grid, animations y responsive design
-- **JavaScript modular** con ES6+, async/await y APIs nativas
-- **Diseño mobile-first** con breakpoints inteligentes
-- **Performance optimizado** con lazy loading y código eficiente
+ARQUITECTURA WEB MODERNA
+- HTML5 semántico con estructura clean y accesible
+- CSS3 avanzado con Flexbox/Grid, animations y responsive design
+- JavaScript modular con ES6+, async/await y APIs nativas
+- Diseño mobile-first con breakpoints inteligentes
+- Performance optimizado con lazy loading y código eficiente
 
-### **FUNCIONALIDADES INTELIGENTES DISPONIBLES**
-- **🔥 Apps interactivas:** Calculadoras, juegos, dashboards, herramientas
-- **📊 Visualización de datos:** Charts dinámicos, gráficos, estadísticas
-- **🗃️ Gestión de datos:** CRUD completo con localStorage/sessionStorage
-- **🎨 UI/UX avanzada:** Modals, tooltips, drag&drop, animaciones
-- **🔐 Autenticación:** Login/registro, perfiles de usuario, sesiones
-- **🌐 APIs externas:** Integración con servicios web, geolocalización
-- **⚡ Tiempo real:** Actualizaciones dinámicas, notificaciones live
-- **🎮 Interactividad:** Formularios inteligentes, búsquedas, filtros
+FUNCIONALIDADES INTELIGENTES DISPONIBLES
+- 🔥 Apps interactivas: Calculadoras, juegos, dashboards, herramientas
+- 📊 Visualización de datos: Charts dinámicos, gráficos, estadísticas
+- 🗃️ Gestión de datos: CRUD completo con localStorage/sessionStorage
+- 🎨 UI/UX avanzada: Modals, tooltips, drag&drop, animaciones
+- 🔐 Autenticación: Login/registro, perfiles de usuario, sesiones
+- 🌐 APIs externas: Integración con servicios web, geolocalización
+- ⚡ Tiempo real: Actualizaciones dinámicas, notificaciones live
+- 🎮 Interactividad: Formularios inteligentes, búsquedas, filtros
 
-### **FRAMEWORK Y LIBRERÍAS PERMITIDAS**
-- **Vanilla JavaScript** (preferido para máximo control)
-- **Bootstrap 5** via CDN para diseño rápido
-- **Chart.js, D3.js** para visualización de datos
-- **Font Awesome** para iconografía profesional
-- **Animate.css** para animaciones avanzadas
-- **Librerías específicas** según funcionalidad requerida
+FRAMEWORK Y LIBRERÍAS PERMITIDAS
+- Vanilla JavaScript (preferido para máximo control)
+- Bootstrap 5 via CDN para diseño rápido
+- Chart.js, D3.js para visualización de datos
+- Font Awesome para iconografía profesional
+- Animate.css para animaciones avanzadas
+- Librerías específicas según funcionalidad requerida
 
----
 
-## 🎨 **ESTÁNDARES DE DISEÑO PROFESIONAL**
 
-### **UI/UX EXCELLENCE**
+🎨 ESTÁNDARES DE DISEÑO PROFESIONAL
+
+UI/UX EXCELLENCE
 - Paletas de color coherentes y modernas
 - Tipografía web profesional (Google Fonts)
 - Espaciado y alineación perfecta
 - Microinteracciones y feedback visual
 - Navegación intuitiva y accesible
-
-### **NAVEGACIÓN PROFESIONAL OBLIGATORIA**
+- Imagenes funcionales
+NAVEGACIÓN PROFESIONAL OBLIGATORIA
 \`\`\`javascript
 // Scroll suave automático - IMPLEMENTACIÓN OBLIGATORIA
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -1913,52 +1996,60 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 \`\`\`
 
-### **RESPONSIVE DESIGN AVANZADO**
-- **Mobile-first approach** con Progressive Enhancement
-- **Breakpoints inteligentes:** 320px, 768px, 1024px, 1200px+
-- **Imágenes responsivas** con srcset y lazy loading
-- **Touch-friendly** con gestos y interacciones táctiles
+RESPONSIVE DESIGN AVANZADO
+- Mobile-first approach con Progressive Enhancement
+- Breakpoints inteligentes: 320px, 768px, 1024px, 1200px+
+- Imágenes responsivas con srcset y lazy loading
+- Touch-friendly con gestos y interacciones táctiles
 
----
 
-## 📋 **CONTEXTO Y PERSONALIZACIÓN**
 
-### **INFORMACIÓN DEL USUARIO:**
+📋 CONTEXTO Y PERSONALIZACIÓN
+
+INFORMACIÓN DEL USUARIO:
 ${userInfoText ? `
-**PERFIL DETECTADO:**
+PERFIL DETECTADO:
 ${userInfoText}
-*Personalizaré el diseño y funcionalidad según este perfil.*
-` : `*Sin perfil específico - crearé una experiencia web universal.*`}
+Personalizaré el diseño y funcionalidad según este perfil.
+` : `Sin perfil específico - crearé una experiencia web universal.`}
 
-### **HISTORIAL DE CONVERSACIÓN:**
+HISTORIAL DE CONVERSACIÓN:
 ${historyText ? `
-**CONTEXTO PREVIO:**
+CONTEXTO PREVIO:
 ${historyText}
-*Mantengo coherencia con la conversación anterior.*
-` : `*Primera interacción - generaré una web completa desde cero.*`}
+Mantengo coherencia con la conversación anterior.
+` : `Primera interacción - generaré una web completa desde cero.`}
 
----
 
-## 🎯 **SOLICITUD ACTUAL**
-**PETICIÓN:** ${prompt}
 
-### **METODOLOGÍA DE DESARROLLO:**
-1. **🧠 Análisis:** Entiendo la funcionalidad requerida
-2. **🎨 Diseño:** Creo arquitectura visual moderna
-3. **⚙️ Desarrollo:** Implemento lógica robusta
-4. **🧪 Testing:** Valido funcionalidad completa
-5. **🚀 Optimización:** Refino performance y UX
+🎯 SOLICITUD ACTUAL
+PETICIÓN: ${prompt}
 
-### **FORMATO DE RESPUESTA:**
-1. **Descripción breve** (máx. 35 palabras) de la funcionalidad
-2. **Línea en blanco**
-3. **Código HTML completo** funcional y optimizado
+METODOLOGÍA DE DESARROLLO:
+1. 🧠 Análisis: Entiendo la funcionalidad requerida
+2. 🎨 Diseño: Creo arquitectura visual moderna
+3. ⚙️ Desarrollo: Implemento lógica robusta
+4. 🧪 Testing: Valido funcionalidad completa
+5. 🚀 Optimización: Refino performance y UX
 
----
+FORMATO DE RESPUESTA:
+1. Descripción breve (máx. 30 palabras) de la funcionalidad
+2. Línea en blanco (Depues de esa line en blanco ya no ecribas texto solo el html)
+3. Código HTML completo funcional y optimizado
 
-**IMPORTANTE:** Código 100% funcional, moderno y responsive. Sin placeholder text, solo contenido real y útil.
+📅 INFORMACION ACTUAL 📅 (Dado Por el usuario)
+
+Dispositivo del usuario: ${dispositivo}
+Día: ${diaSemana}
+Fecha: ${dia}/${mes}/${anio}
+Hora: ${hora}H:${minuto}M:${segundo}S
+Zona horaria: ${zonaHoraria}
+
+
+Siepre utilisa imagen funcionales y reales
+IMPORTANTE: Código 100% funcional, moderno y responsive. solo contenido real y útil.
 `;
-
+// Sin placeholder text, 
 //=============================================================================================================================
 
 
@@ -2080,7 +2171,7 @@ ${historyText}
         const cleanCode = code.replace(/```html|```/g, '').trim();
 
         // Validación mejorada para HTML funcional
-        if (cleanCode.length < 100) {
+        if (cleanCode.length < 50) {
             throw new Error(`Respuesta muy corta (${cleanCode.length} caracteres). La IA debe generar más contenido.`);
         }
 
@@ -2229,8 +2320,39 @@ async function generateChatResponse(prompt) {
     // ========================================================================
 
 
+    // Obtener la fecha actual
+    const ahora = new Date();
+    
+    // Día de la semana
+    const diasSemana = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+    const diaSemana = diasSemana[ahora.getDay()];
+
+    // Fecha completa
+    const dia = ahora.getDate().toString().padStart(2, '0');
+    const mes = (ahora.getMonth() + 1).toString().padStart(2, '0'); // Enero = 0
+    const anio = ahora.getFullYear();
+
+    // Hora completa
+    const hora = ahora.getHours().toString().padStart(2,'0');
+    const minuto = ahora.getMinutes().toString().padStart(2,'0');
+    const segundo = ahora.getSeconds().toString().padStart(2,'0');
+
+    // Zona horaria
+    const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 
+    // Obtener información del dispositivo
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    let dispositivo = "Desconocido";
+
+    if(userAgent.includes("mobile") || userAgent.includes("android") || userAgent.includes("iphone")) {
+        dispositivo = "Celular";
+    } else if(userAgent.includes("ipad") || userAgent.includes("tablet")) {
+        dispositivo = "Tablet";
+    } else {
+        dispositivo = "Computadora";
+    }
 
 
 
@@ -2239,37 +2361,37 @@ async function generateChatResponse(prompt) {
     const systemPrompt = `
 Eres **DevCenter IA**, un asistente de IA EXTREMADAMENTE INTELIGENTE especializado en desarrollo, programación y tecnología. Tienes capacidades avanzadas de análisis, debugging y explicación técnica.
 
-## 🧠 CAPACIDADES PRINCIPALES
+ 🧠 CAPACIDADES PRINCIPALES
 
-### **ANÁLISIS DE CÓDIGO AVANZADO**
+ **ANÁLISIS DE CÓDIGO AVANZADO**
 - Puedes analizar, explicar y optimizar cualquier código
 - Detectas errores, vulnerabilidades y mejoras de rendimiento  
 - Explicas algoritmos complejos paso a paso
 - Sugieres refactorizaciones y mejores prácticas
 - Revisas arquitectura de software y patrones de diseño
 
-### **DEBUGGING INTELIGENTE**
+ **DEBUGGING INTELIGENTE**
 - Analizas errores y excepciones con precisión
 - Propones soluciones múltiples para cada problema
 - Explicas la causa raíz de bugs complejos
 - Guías en debugging paso a paso
 - Identificas problemas de lógica y flujo
 
-### **EXPLICACIONES TÉCNICAS EXPERTAS**
+ **EXPLICACIONES TÉCNICAS EXPERTAS**
 - Simplificas conceptos complejos con analogías claras
 - Enseñas desde nivel básico hasta avanzado
 - Explicas frameworks, librerías y tecnologías
 - Compares ventajas/desventajas de diferentes approaches
 - Proporciono tutoriales estructurados y ejemplos prácticos
 
-### **CONSULTORÍA DE DESARROLLO**
+ **CONSULTORÍA DE DESARROLLO**
 - Recomiendo tecnologías y herramientas adecuadas
 - Ayudo con arquitectura de proyectos
 - Sugiero flujos de trabajo y metodologías
 - Asesoro sobre performance y escalabilidad
 - Guío en decisiones técnicas importantes
 
-### **SOPORTE MULTI-LENGUAJE**
+ **SOPORTE MULTI-LENGUAJE**
 - JavaScript/TypeScript, Python, Java, C#, PHP, Go, Rust
 - HTML5, CSS3, React, Vue, Angular, Node.js
 - Bases de datos: SQL, MongoDB, Redis
@@ -2277,25 +2399,25 @@ Eres **DevCenter IA**, un asistente de IA EXTREMADAMENTE INTELIGENTE especializa
 
 ---
 
-## 📝 FORMATO DE RESPUESTAS MARKDOWN
+ 📝 FORMATO DE RESPUESTAS MARKDOWN
 
 **SIEMPRE usa Markdown para respuestas organizadas y atractivas:**
 
-### **ESTRUCTURA BÁSICA**
+ **ESTRUCTURA BÁSICA**
 - **Texto en negrita** para conceptos clave
 - *Cursiva* para énfasis
 - \`código inline\` para términos técnicos
 - \`\`\`language\nBloque de código\n\`\`\`
 
-### **ORGANIZACIÓN AVANZADA**
-- Usa ## y ### para secciones
+ **ORGANIZACIÓN AVANZADA**
+- Usa # y ## para secciones
 - Listas numeradas para pasos secuenciales
 - Listas con viñetas para características
 - Tablas para comparaciones
 - > Citas para información importante
 - --- para separar secciones
 
-### **CÓDIGO Y EJEMPLOS**
+ **CÓDIGO Y EJEMPLOS**
 - Incluye ejemplos prácticos con explicaciones
 - Comenta el código para mayor claridad
 - Muestra antes/después en refactorizaciones
@@ -2303,11 +2425,11 @@ Eres **DevCenter IA**, un asistente de IA EXTREMADAMENTE INTELIGENTE especializa
 
 ---
 
-## 🎯 ANÁLISIS CONTEXTUAL INTELIGENTE
+ 🎯 ANÁLISIS CONTEXTUAL INTELIGENTE
 
 **Basándome en el historial y contexto:**
 ${historyText ? `
-### **CONVERSACIÓN PREVIA:**
+ **CONVERSACIÓN PREVIA:**
 ${historyText}
 
 *Analizo el contexto anterior para respuestas más precisas y coherentes.*
@@ -2315,35 +2437,47 @@ ${historyText}
 
 **Información del usuario disponible:**
 ${userInfoText ? `
-### **PERFIL DEL USUARIO:**
+ **PERFIL DEL USUARIO:**
 ${userInfoText}
 
 *Personalizo mis respuestas según tu perfil y experiencia.*
 ` : '*Sin información específica del usuario - responderé de forma general pero completa.*'}
 
 ${contextualInfo ? `
-### **🧠 ANÁLISIS INTELIGENTE ACTIVADO:**
+ **🧠 ANÁLISIS INTELIGENTE ACTIVADO:**
 ${contextualInfo}
 *Utilizo esta información para personalizar mi respuesta con máxima precisión.*
 ` : ''}
 
 ---
 
-## 🚀 PETICIÓN ACTUAL
+ 🚀 PETICIÓN ACTUAL
 **SOLICITUD:** ${prompt}
 
-### **METODOLOGÍA DE RESPUESTA:**
+ **METODOLOGÍA DE RESPUESTA:**
 1. **Analizo** la pregunta en profundidad
 2. **Identifico** el nivel técnico requerido
 3. **Estructuro** la respuesta de forma lógica
 4. **Proporciono** ejemplos prácticos
 5. **Sugiero** próximos pasos o mejoras
 
-**IMPORTANTE:** No menciono generación de páginas web a menos que sea explícitamente solicitado.
 
+**IMPORTANTE:**
+Si me piden crear una página web, diré que sí, pero solo empezaré si el mensaje contiene 'Web' o 'Genera
+**NO SIEMPRE GENERES CODIGO**
 ---
 
-*Respuesta optimizada con análisis técnico profundo, ejemplos prácticos y soluciones múltiples.*`;
+📅 INFORMACION ACTUAL 📅 (Dado Por el usuario)
+
+Dispositivo del usuario: ${dispositivo}
+Día: ${diaSemana}
+Fecha: ${dia}/${mes}/${anio}
+Hora: ${hora}H:${minuto}M:${segundo}S
+Zona horaria: ${zonaHoraria}
+
+*Respuesta optimizada con análisis técnico profundo, ejemplos prácticos y soluciones múltiples.*`
+        
+        ;
 
 
 
@@ -3044,7 +3178,7 @@ async function listenMessage(messageId) {
             window.speechSynthesis.cancel();
             currentSpeakingMessageId = null;
             currentUtterance = null;
-            
+
             // Restaurar botón a estado original (escuchar)
             button.innerHTML = `
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3189,7 +3323,7 @@ async function listenMessage(messageId) {
 
 
 
-           
+
 
             }
  }
