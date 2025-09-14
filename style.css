@@ -1090,76 +1090,337 @@ body::before {
     opacity: 0.85;
 }
 
-/* Modal de datos de usuario */
+/* Modal de datos de usuario - DISEÑO COMPLETAMENTE MEJORADO */
 .user-info-modal {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
     z-index: 3000;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
 }
 
 .user-info-modal-content {
-    background: var(--bg-secondary);
-    border-radius: var(--border-radius);
-    padding: 2rem 1.5rem 1.5rem 1.5rem;
-    min-width: 300px;
-    max-width: 90vw;
-    box-shadow: var(--shadow);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(20, 20, 30, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 0;
+    min-width: 320px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 
+                0 8px 32px rgba(124, 58, 237, 0.2);
     color: var(--text-primary);
+    overflow: hidden;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Header del modal */
+.modal-header {
+    background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+    padding: 1.5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        rgba(255,255,255,0.1) 0%, 
+        transparent 50%);
+    pointer-events: none;
+}
+
+.modal-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.modal-subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+/* Contenido del formulario */
+.user-info-modal-content form {
+    padding: 2rem;
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+}
+
+/* Secciones de configuración */
+.settings-section {
+    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.settings-section:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(124, 58, 237, 0.3);
+    transform: translateY(-1px);
+}
+
+.section-header {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-icon {
+    font-size: 1.25rem;
+    opacity: 0.9;
+}
+
+.section-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Grids de inputs */
+.input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
 }
 
-.user-info-modal-content h3 {
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-    font-weight: 600;
+.ai-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
 }
 
-.user-info-modal-content label {
+.input-group {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.95em;
-    margin-bottom: 0.5rem;
+    gap: 0.5rem;
 }
 
-.user-info-modal-content input {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.5rem;
-    color: var(--text-primary);
-    font-size: 1em;
+.input-group.full-width {
+    grid-column: 1 / -1;
 }
 
-.user-info-modal-content input:focus {
-    outline: none;
-    border-color: var(--accent);
+/* Labels mejorados */
+.input-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
 }
 
+.label-icon {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Inputs y selects mejorados */
+.user-info-modal-content input,
+.user-info-modal-content select,
 .user-info-modal-content textarea {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 0.75rem;
     color: var(--text-primary);
-    font-size: 1em;
-    resize: vertical;
-    min-height: 38px;
-    max-height: 120px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
 }
 
+.user-info-modal-content input:focus,
+.user-info-modal-content select:focus,
 .user-info-modal-content textarea:focus {
     outline: none;
     border-color: var(--accent);
+    background: rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+    transform: translateY(-1px);
+}
+
+.user-info-modal-content input:hover,
+.user-info-modal-content select:hover,
+.user-info-modal-content textarea:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.user-info-modal-content select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a0a0a0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+/* Theming estándar moderno para selects */
+.user-info-modal-content {
+    color-scheme: dark;
+}
+
+.user-info-modal-content select {
+    color-scheme: dark;
+    accent-color: var(--accent-solid);
+}
+
+/* Estilos para las opciones del dropdown - Compatibilidad mejorada */
+.user-info-modal-content select option {
+    background-color: #1a1a2e;
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
+.user-info-modal-content select option:hover {
+    background-color: var(--accent-solid);
+    color: white;
+}
+
+.user-info-modal-content select option:checked,
+.user-info-modal-content select option[selected] {
+    background-color: var(--accent-solid);
+    color: white;
+    font-weight: 600;
+}
+
+.user-info-modal-content textarea {
+    resize: vertical;
+    min-height: 60px;
+    max-height: 120px;
+    font-family: inherit;
+}
+
+/* Placeholder styling */
+.user-info-modal-content input::placeholder,
+.user-info-modal-content textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+}
+
+/* Botones de acción */
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary, .btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    min-height: 48px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #8b5cf6 0%, var(--accent) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .user-info-modal-content {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+    }
+
+    .input-grid,
+    .ai-settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .user-info-modal-content form {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.25rem;
+    }
+
+    .settings-section {
+        padding: 1rem;
+    }
 }
 
 /* Modal de configuración de IA */
@@ -1824,5 +2085,110 @@ body::before {
 .message.ai .message-content .action-btn {
     margin: 0.25rem;
     font-size: 0.85rem;
+}
+
+/* =================== ESTILOS RESPONSIVOS PARA MÓVIL =================== */
+
+/* Ocultar botones de sugerencias en dispositivos móviles */
+@media (max-width: 768px) {
+    .suggestions {
+        display: none !important;
+    }
+
+    /* Hacer más grande el input de texto en móvil */
+    #messageInput {
+        font-size: 1rem;
+        padding: 1rem 1.25rem;
+        min-height: 56px;
+    }
+
+    /* Hacer más grande el botón de enviar en móvil */
+    #sendBtn {
+        width: 56px;
+        height: 56px;
+    }
+
+    #sendBtn svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* =================== BOTONES DE ACCIÓN DE MENSAJES =================== */
+
+.message-actions {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    justify-content: flex-end;
+}
+
+.message.ai:hover .message-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+.message-action-btn {
+    background: none;
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.message-action-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.message-action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.message-action-btn.copy-btn:hover {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.message-action-btn.share-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-solid);
+}
+
+.message-action-btn.listen-btn:hover {
+    background: rgba(168, 85, 247, 0.1);
+    color: #a855f7;
+}
+
+.message-action-btn.regenerate-btn:hover {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+/* Animación de rotación para el botón de regenerar */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
 }
 
