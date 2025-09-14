@@ -159,16 +159,126 @@
     <!-- Modal para datos de usuario -->
     <div class="user-info-modal" id="userInfoModal" style="display:none;">
         <div class="user-info-modal-content">
-            <h3>Datos del Usuario</h3>
+            <div class="modal-header">
+                <h3>⚙️ Configuración Personal</h3>
+                <p class="modal-subtitle">Personaliza tu experiencia con DevCenter IA</p>
+            </div>
+
             <form id="userInfoForm">
-                <label>Nombre:<input type="text" id="userName" autocomplete="off"></label>
-                <label>Fecha de nacimiento:<input type="date" id="userBirth"></label>
-                <label>Correo electrónico:<input type="email" id="userEmail" autocomplete="off"></label>
-                <label>Información personalizada:<textarea id="userCustom" rows="2"
-                        placeholder="Ej: Soy desarrollador, me gusta el diseño web..."></textarea></label>
-                <div style="margin-top:1rem;display:flex;gap:0.5rem;">
-                    <button type="submit" class="action-btn" style="flex:1;">Guardar</button>
-                    <button type="button" class="action-btn" id="closeUserInfoModal" style="flex:1;">Cerrar</button>
+                <!-- Información Personal -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <span class="section-icon">👤</span>
+                        <h4>Información Personal</h4>
+                    </div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="userName">Nombre</label>
+                            <input type="text" id="userName" autocomplete="off" placeholder="Tu nombre">
+                        </div>
+                        <div class="input-group">
+                            <label for="userBirth">Fecha de nacimiento</label>
+                            <input type="date" id="userBirth">
+                        </div>
+                        <div class="input-group full-width">
+                            <label for="userEmail">Correo electrónico</label>
+                            <input type="email" id="userEmail" autocomplete="off" placeholder="tu@email.com">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuraciones de IA -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <span class="section-icon">🤖</span>
+                        <h4>Preferencias de IA</h4>
+                    </div>
+                    <div class="ai-settings-grid">
+                        <div class="input-group">
+                            <label for="aiResponseStyle">
+                                <span class="label-icon">💬</span>
+                                Estilo de respuesta
+                            </label>
+                            <select id="aiResponseStyle">
+                                <option value="balanced">⚖️ Balanceado</option>
+                                <option value="casual">😊 Casual y amigable</option>
+                                <option value="formal">🎯 Formal y profesional</option>
+                                <option value="technical">🔧 Técnico y preciso</option>
+                                <option value="creative">✨ Creativo e innovador</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="detailLevel">
+                                <span class="label-icon">📊</span>
+                                Nivel de detalle
+                            </label>
+                            <select id="detailLevel">
+                                <option value="medium">📋 Medio (ideal)</option>
+                                <option value="concise">⚡ Conciso</option>
+                                <option value="detailed">📖 Detallado</option>
+                                <option value="comprehensive">📚 Exhaustivo</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="projectType">
+                                <span class="label-icon">🚀</span>
+                                Tipo de proyectos
+                            </label>
+                            <select id="projectType">
+                                <option value="general">🌐 General</option>
+                                <option value="web">💻 Desarrollo web</option>
+                                <option value="mobile">📱 Apps móviles</option>
+                                <option value="backend">⚙️ Backend y APIs</option>
+                                <option value="frontend">🎨 Frontend y UI/UX</option>
+                                <option value="fullstack">🔄 Full-stack</option>
+                                <option value="data">📊 Ciencia de datos</option>
+                                <option value="ai">🧠 Inteligencia artificial</option>
+                                <option value="game">🎮 Desarrollo de juegos</option>
+                                <option value="desktop">🖥️ Apps de escritorio</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preferencias de Código -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <span class="section-icon">💾</span>
+                        <h4>Estilo de Código</h4>
+                    </div>
+                    <div class="input-group">
+                        <label for="codeStylePrefs">
+                            <span class="label-icon">📝</span>
+                            Convenciones y preferencias
+                        </label>
+                        <textarea id="codeStylePrefs" rows="2" 
+                                  placeholder="Ej: Funciones flecha, const/let, comentarios descriptivos, JSDoc..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Información Adicional -->
+                <div class="settings-section">
+                    <div class="section-header">
+                        <span class="section-icon">📝</span>
+                        <h4>Información Adicional</h4>
+                    </div>
+                    <div class="input-group">
+                        <label for="userCustom">Cuéntanos sobre ti</label>
+                        <textarea id="userCustom" rows="2"
+                                  placeholder="Ej: Soy desarrollador, me especializo en React, trabajo en startups..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="closeUserInfoModal">
+                        <span>❌</span> Cancelar
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <span>✅</span> Guardar configuración
+                    </button>
                 </div>
             </form>
         </div>
