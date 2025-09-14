@@ -5,11 +5,70 @@ let MAX_MESSAGES_PER_CHAT = 50; // <--- Cambia este valor para ajustar el límit
 const RESET_LIMIT_MINUTES = 30; // Tiempo en minutos para restablecer el límite
 // ===========================================================================
 
-// ================= CONFIGURACIÓN DE GENERACIÓN =============================
-let TEMPERATURE = 0.2;       // Creatividad del modelo
-let TOP_K = 50;              // Número de tokens candidatos
-let TOP_P = 0.90;            // Probabilidad acumulada
-let MAX_OUTPUT_TOKENS = 18000; // Máximo de tokens generados
+// ================= CONFIGURACIÓN DE GENERACIÓN INTELIGENTE ================
+let TEMPERATURE = 0.3;        // Creatividad optimizada para respuestas ricas y precisas
+let TOP_K = 40;               // Tokens candidatos selectivos para mayor calidad
+let TOP_P = 0.85;             // Probabilidad balanceada para coherencia óptima
+let MAX_OUTPUT_TOKENS = 18000; // Máximo de tokens para respuestas completas
+
+// ================= SISTEMA DE MEMORIA CONTEXTUAL AVANZADO =================
+let contextualMemory = {
+    userExpertise: null,          // Nivel de experiencia detectado del usuario
+    conversationTheme: null,      // Tema principal de la conversación
+    previousSolutions: [],        // Soluciones técnicas previas proporcionadas
+    userPreferences: {},          // Preferencias de desarrollo detectadas
+    projectContext: null,         // Contexto del proyecto en desarrollo
+    lastCodeLanguage: null,       // Último lenguaje de programación utilizado
+    complexityLevel: 'intermediate', // Nivel de complejidad detectado
+    interactionPattern: 'mixed'   // Patrón de interacción: 'chat', 'web', 'mixed'
+};
+
+// Variables para el control de síntesis de voz
+let currentSpeakingMessageId = null;  // ID del mensaje que se está reproduciendo
+let currentUtterance = null;          // Referencia al utterance actual
+
+// ================= CAPACIDADES DE ANÁLISIS INTELIGENTE ====================
+let intelligentAnalysis = {
+    detectUserLevel: function(message) {
+        const basicKeywords = ['cómo', 'qué es', 'ayuda', 'básico', 'simple'];
+        const advancedKeywords = ['optimización', 'arquitectura', 'refactoring', 'performance', 'escalabilidad'];
+        const expertKeywords = ['algoritmo complejo', 'design patterns', 'microservicios', 'concurrencia'];
+
+        if (expertKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
+            return 'expert';
+        } else if (advancedKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
+            return 'advanced';
+        } else if (basicKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
+            return 'beginner';
+        }
+        return 'intermediate';
+    },
+
+    extractCodeLanguage: function(message) {
+        const languages = ['javascript', 'python', 'java', 'react', 'vue', 'angular', 'node', 'css', 'html', 'typescript', 'php', 'c#', 'go', 'rust'];
+        for (let lang of languages) {
+            if (message.toLowerCase().includes(lang)) {
+                return lang;
+            }
+        }
+        return null;
+    },
+
+    detectProjectType: function(message) {
+        const webKeywords = ['sitio web', 'página web', 'frontend', 'backend', 'fullstack'];
+        const mobileKeywords = ['móvil', 'app', 'aplicación móvil', 'android', 'ios'];
+        const desktopKeywords = ['escritorio', 'desktop', 'aplicación de escritorio'];
+
+        if (webKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
+            return 'web';
+        } else if (mobileKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
+            return 'mobile';
+        } else if (desktopKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
+            return 'desktop';
+        }
+        return 'general';
+    }
+};
 // ===========================================================================
 
 // ================= CONFIGURACIÓN DE IAs ====================================
@@ -871,10 +930,37 @@ function addMessage(type, content, generatedCode = null, save = true, messageId 
         messageElement.dataset.retryPrompt = lastUserMsg;
     }
 
+    // Botones de acción para mensajes de IA
+    let actionButtonsHtml = '';
+    if (type === 'ai' && !isError) {
+        actionButtonsHtml = `
+            <div class="message-actions">
+                <button class="message-action-btn copy-btn" onclick="copyMessage('${messageId}')" title="Copiar respuesta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+                <button class="message-action-btn share-btn" onclick="shareMessage('${messageId}')" title="Compartir respuesta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+                    </svg>
+                </button>
+                <button class="message-action-btn listen-btn" onclick="listenMessage('${messageId}')" title="Escuchar respuesta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5,6 9,2 9,2 15,6 15,11 19,11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+    }
+
     messageElement.innerHTML = `
         <div class="message-content">
             <div class="message-text">${type === 'ai' ? renderMarkdown(content) : escapeHtml(content)}</div>
             <div class="message-time">${timeStr}</div>
+            ${actionButtonsHtml}
             ${generatedCode ? `
                 <div class="message-preview">
                     <div class="preview-thumbnail">
@@ -938,10 +1024,24 @@ function setUserInfoForm() {
     const birth = document.getElementById('userBirth');
     const email = document.getElementById('userEmail');
     const custom = document.getElementById('userCustom');
+
+    // Nuevos campos de configuración de IA
+    const aiResponseStyle = document.getElementById('aiResponseStyle');
+    const detailLevel = document.getElementById('detailLevel');
+    const projectType = document.getElementById('projectType');
+    const codeStylePrefs = document.getElementById('codeStylePrefs');
+
+    // Campos originales
     if (name) name.value = userInfo.name || '';
     if (birth) birth.value = userInfo.birth || '';
     if (email) email.value = userInfo.email || '';
     if (custom) custom.value = userInfo.custom || '';
+
+    // Nuevos campos con valores por defecto
+    if (aiResponseStyle) aiResponseStyle.value = userInfo.aiResponseStyle || 'balanced';
+    if (detailLevel) detailLevel.value = userInfo.detailLevel || 'medium';
+    if (projectType) projectType.value = userInfo.projectType || 'general';
+    if (codeStylePrefs) codeStylePrefs.value = userInfo.codeStylePrefs || '';
 }
 function showUserInfoModal() {
     loadUserInfo();
@@ -955,7 +1055,23 @@ function saveUserInfo() {
     const birth = document.getElementById('userBirth').value;
     const email = document.getElementById('userEmail').value.trim();
     const custom = document.getElementById('userCustom').value.trim();
-    userInfo = { name, birth, email, custom };
+
+    // Nuevos campos de configuración de IA
+    const aiResponseStyle = document.getElementById('aiResponseStyle')?.value || 'balanced';
+    const detailLevel = document.getElementById('detailLevel')?.value || 'medium';
+    const projectType = document.getElementById('projectType')?.value || 'general';
+    const codeStylePrefs = document.getElementById('codeStylePrefs')?.value.trim() || '';
+
+    userInfo = { 
+        name, 
+        birth, 
+        email, 
+        custom,
+        aiResponseStyle,
+        detailLevel,
+        projectType,
+        codeStylePrefs
+    };
     localStorage.setItem('devCenter_userInfo', JSON.stringify(userInfo));
 }
 
@@ -1520,14 +1636,74 @@ async function generateWebpage(prompt) {
 
     // Información del usuario para IA
     let userInfoText = '';
-    if (userInfo && (userInfo.name || userInfo.birth || userInfo.email || userInfo.custom)) {
+    if (userInfo && (userInfo.name || userInfo.birth || userInfo.email || userInfo.custom || userInfo.aiResponseStyle || userInfo.detailLevel || userInfo.projectType || userInfo.codeStylePrefs)) {
         userInfoText = [
             userInfo.name ? `Nombre: ${userInfo.name}` : '',
             userInfo.birth ? `Fecha de nacimiento: ${userInfo.birth}` : '',
             userInfo.email ? `Correo: ${userInfo.email}` : '',
-            userInfo.custom ? `Información personalizada: ${userInfo.custom}` : ''
+            userInfo.custom ? `Información personalizada: ${userInfo.custom}` : '',
+            '',
+            '=== CONFIGURACIONES DE IA ===',
+            userInfo.aiResponseStyle ? `Estilo de respuesta preferido: ${userInfo.aiResponseStyle}` : '',
+            userInfo.detailLevel ? `Nivel de detalle: ${userInfo.detailLevel}` : '',
+            userInfo.projectType ? `Tipo de proyectos: ${userInfo.projectType}` : '',
+            userInfo.codeStylePrefs ? `Estilo de código: ${userInfo.codeStylePrefs}` : ''
         ].filter(Boolean).join('\n');
     }
+
+    // ============= ANÁLISIS INTELIGENTE Y MEMORIA CONTEXTUAL (WEB) =============
+    const detectedLevel = intelligentAnalysis.detectUserLevel(prompt);
+    const detectedLanguage = intelligentAnalysis.extractCodeLanguage(prompt);
+    const detectedProjectType = intelligentAnalysis.detectProjectType(prompt);
+
+    // Actualizar memoria contextual
+    if (detectedLevel && detectedLevel !== 'intermediate') {
+        contextualMemory.userExpertise = detectedLevel;
+        contextualMemory.complexityLevel = detectedLevel;
+    }
+
+    if (detectedLanguage) {
+        contextualMemory.lastCodeLanguage = detectedLanguage;
+        if (!contextualMemory.userPreferences.languages) contextualMemory.userPreferences.languages = [];
+        if (!contextualMemory.userPreferences.languages.includes(detectedLanguage)) {
+            contextualMemory.userPreferences.languages.push(detectedLanguage);
+        }
+    }
+
+    if (detectedProjectType && detectedProjectType !== 'general') {
+        contextualMemory.projectContext = detectedProjectType;
+    }
+
+    // Detectar tema web específico
+    const webKeywords = ['página web', 'sitio web', 'landing', 'frontend', 'responsive'];
+    const ecommerceKeywords = ['tienda', 'ecommerce', 'producto', 'venta', 'carrito'];
+    const dashboardKeywords = ['dashboard', 'panel', 'administración', 'estadísticas'];
+
+    if (webKeywords.some(keyword => prompt.toLowerCase().includes(keyword))) {
+        contextualMemory.conversationTheme = 'web_development';
+    } else if (ecommerceKeywords.some(keyword => prompt.toLowerCase().includes(keyword))) {
+        contextualMemory.conversationTheme = 'ecommerce';
+    } else if (dashboardKeywords.some(keyword => prompt.toLowerCase().includes(keyword))) {
+        contextualMemory.conversationTheme = 'dashboard';
+    }
+
+    contextualMemory.interactionPattern = 'web';
+
+    // Preparar información contextual para generación web
+    let contextualInfo = '';
+    if (contextualMemory.userExpertise && contextualMemory.userExpertise !== 'intermediate') {
+        contextualInfo += `**NIVEL DETECTADO:** ${contextualMemory.userExpertise.toUpperCase()}\n`;
+    }
+    if (contextualMemory.lastCodeLanguage) {
+        contextualInfo += `**TECNOLOGÍA PRINCIPAL:** ${contextualMemory.lastCodeLanguage.toUpperCase()}\n`;
+    }
+    if (contextualMemory.projectContext && contextualMemory.projectContext !== 'general') {
+        contextualInfo += `**TIPO DE PROYECTO:** ${contextualMemory.projectContext.toUpperCase()}\n`;
+    }
+    if (contextualMemory.conversationTheme) {
+        contextualInfo += `**ESPECIALIZACIÓN WEB:** ${contextualMemory.conversationTheme.toUpperCase()}\n`;
+    }
+    // ========================================================================
 
     // PROMPT especial si es el segundo mensaje o más
     let systemPrompt = '';
@@ -1607,7 +1783,7 @@ INSTRUCCIONES AVANZADAS PARA MODIFICACIÓN:
 - Implementa características interactivas, validaciones, animaciones cuando sea apropiado
 - Mantén diseño moderno, responsive y mobile-first con mejoras visuales
 - El código debe ser completamente funcional y probado
-- Responde con una frase corta (máx. 50 palabras) que resuma la mejora, luego deja una línea en blanco y pega el código HTML completo actualizado
+- Responde con una frase corta (máx. 30 palabras) que resuma la mejora, luego deja una línea en blanco y pega el código HTML completo actualizado
 - Todo el contenido debe estar en español
 
 NAVEGACIÓN AVANZADA OBLIGATORIA:
@@ -1663,6 +1839,12 @@ ${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
 
 HISTORIAL DE MENSAJES:
 ${historyText ? historyText : '(Sin historial previo)'}
+
+${contextualInfo ? `
+🧠 **ANÁLISIS INTELIGENTE ACTIVADO:**
+${contextualInfo}
+*Utilizo esta información para personalizar las modificaciones con máxima precisión.*
+` : ''}
 `;
 
 //=============================================================================================================================
@@ -1672,63 +1854,109 @@ ${historyText ? historyText : '(Sin historial previo)'}
 //============================================== Primer mensaje: prompt normal ===============================================
 systemPrompt = `
 
+🚀 **DEVCENTER AI - GENERADOR WEB INTELIGENTE** 🚀
 
-INSTRUCCIONES AVANZADAS PARA IA DE DESARROLLO WEB:
-- Genera un código HTML completo con CSS integrado y JavaScript avanzado cuando sea necesario
-- Usa diseño moderno, profesional, responsive y mobile-first con animaciones suaves
-- Implementa funcionalidad interactiva completa según lo solicitado
-- Todo el código debe ser funcional, probado y listo para usar
-- Responde con una frase corta (máx. 35 palabras) que resuma la funcionalidad, luego deja una línea en blanco y pega el código HTML completo
-- Todo el contenido debe estar en español
+Eres un **ARQUITECTO WEB EXPERTO** que crea aplicaciones web modernas, funcionales e innovadoras. Tu especialidad es construir experiencias web completas con código optimizado y diseño profesional.
 
-NAVEGACIÓN AVANZADA OBLIGATORIA:
-- SIEMPRE implementa navegación suave para enlaces internos (#section)
-- Incluye JavaScript para scroll suave usando scrollIntoView({behavior: 'smooth'})
-- Maneja eventos de navegación correctamente para evitar bugs en dominios Replit
-- Implementa offset automático para headers fijos
-- Previene comportamiento defectuoso con event.preventDefault() en navegación interna
-- Asegura que menús de navegación funcionen perfectamente sin "bugear" la página
-- NO uses enlaces simples href="#section" - SIEMPRE agrega lógica JavaScript de soporte
+## 🎯 **ESPECIFICACIONES TÉCNICAS AVANZADAS**
 
-CAPACIDADES AVANZADAS QUE PUEDES USAR:
-- Formularios con validación en tiempo real y envío
-- Aplicaciones interactivas (calculadoras, juegos, quizzes)
-- Sistemas de login/registro con localStorage
-- Carruseles, galerías, modals y componentes dinámicos
-- Charts y gráficos usando Chart.js o Canvas
-- Mapas interactivos, calendarios, cronómetros
-- Sistemas CRUD (crear, leer, actualizar, eliminar)
-- APIs externas, geolocalización, cámara
-- Animaciones CSS/JS, efectos visuales
-- Bootstrap, Tailwind o CSS Grid/Flexbox avanzado
-- Funciones de búsqueda, filtros, ordenamiento
-- Modo oscuro/claro, temas personalizables
-- Drag & drop, gestos táctiles
-- Notificaciones, alerts personalizados
-- Sistemas de puntuación, progreso
-- Generadores, convertidores, herramientas
+### **ARQUITECTURA WEB MODERNA**
+- **HTML5 semántico** con estructura clean y accesible
+- **CSS3 avanzado** con Flexbox/Grid, animations y responsive design
+- **JavaScript modular** con ES6+, async/await y APIs nativas
+- **Diseño mobile-first** con breakpoints inteligentes
+- **Performance optimizado** con lazy loading y código eficiente
 
+### **FUNCIONALIDADES INTELIGENTES DISPONIBLES**
+- **🔥 Apps interactivas:** Calculadoras, juegos, dashboards, herramientas
+- **📊 Visualización de datos:** Charts dinámicos, gráficos, estadísticas
+- **🗃️ Gestión de datos:** CRUD completo con localStorage/sessionStorage
+- **🎨 UI/UX avanzada:** Modals, tooltips, drag&drop, animaciones
+- **🔐 Autenticación:** Login/registro, perfiles de usuario, sesiones
+- **🌐 APIs externas:** Integración con servicios web, geolocalización
+- **⚡ Tiempo real:** Actualizaciones dinámicas, notificaciones live
+- **🎮 Interactividad:** Formularios inteligentes, búsquedas, filtros
 
+### **FRAMEWORK Y LIBRERÍAS PERMITIDAS**
+- **Vanilla JavaScript** (preferido para máximo control)
+- **Bootstrap 5** via CDN para diseño rápido
+- **Chart.js, D3.js** para visualización de datos
+- **Font Awesome** para iconografía profesional
+- **Animate.css** para animaciones avanzadas
+- **Librerías específicas** según funcionalidad requerida
 
-NAVEGACIÓN PROFESIONAL ESPECIALIZADA:
-- Scroll suave automático para todos los enlaces de navegación interna
-- Manejo inteligente de fragmentos URL (#features, #about, etc.)
-- JavaScript robusto para navegación que funciona en cualquier dominio
-- Indicadores visuales de sección activa (highlight en menú)
-- Navegación sin errores que previene "bugs" de redirección
-- Código estándar: document.querySelector('a[href="#section"]').addEventListener('click', smoothScroll)
-- Offset automático para headers pegajosos (sticky headers)
-- Navegación completamente funcional y profesional sin glitches
+---
 
-INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
-${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
+## 🎨 **ESTÁNDARES DE DISEÑO PROFESIONAL**
 
-HISTORIAL DE MENSAJES:
-${historyText ? historyText : '(Sin historial previo)'}
+### **UI/UX EXCELLENCE**
+- Paletas de color coherentes y modernas
+- Tipografía web profesional (Google Fonts)
+- Espaciado y alineación perfecta
+- Microinteracciones y feedback visual
+- Navegación intuitiva y accesible
 
-USUARIO SOLICITA: ${prompt}
+### **NAVEGACIÓN PROFESIONAL OBLIGATORIA**
+\`\`\`javascript
+// Scroll suave automático - IMPLEMENTACIÓN OBLIGATORIA
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+\`\`\`
 
-Responde con una frase corta y el archivo HTML completo:
+### **RESPONSIVE DESIGN AVANZADO**
+- **Mobile-first approach** con Progressive Enhancement
+- **Breakpoints inteligentes:** 320px, 768px, 1024px, 1200px+
+- **Imágenes responsivas** con srcset y lazy loading
+- **Touch-friendly** con gestos y interacciones táctiles
+
+---
+
+## 📋 **CONTEXTO Y PERSONALIZACIÓN**
+
+### **INFORMACIÓN DEL USUARIO:**
+${userInfoText ? `
+**PERFIL DETECTADO:**
+${userInfoText}
+*Personalizaré el diseño y funcionalidad según este perfil.*
+` : `*Sin perfil específico - crearé una experiencia web universal.*`}
+
+### **HISTORIAL DE CONVERSACIÓN:**
+${historyText ? `
+**CONTEXTO PREVIO:**
+${historyText}
+*Mantengo coherencia con la conversación anterior.*
+` : `*Primera interacción - generaré una web completa desde cero.*`}
+
+---
+
+## 🎯 **SOLICITUD ACTUAL**
+**PETICIÓN:** ${prompt}
+
+### **METODOLOGÍA DE DESARROLLO:**
+1. **🧠 Análisis:** Entiendo la funcionalidad requerida
+2. **🎨 Diseño:** Creo arquitectura visual moderna
+3. **⚙️ Desarrollo:** Implemento lógica robusta
+4. **🧪 Testing:** Valido funcionalidad completa
+5. **🚀 Optimización:** Refino performance y UX
+
+### **FORMATO DE RESPUESTA:**
+1. **Descripción breve** (máx. 35 palabras) de la funcionalidad
+2. **Línea en blanco**
+3. **Código HTML completo** funcional y optimizado
+
+---
+
+**IMPORTANTE:** Código 100% funcional, moderno y responsive. Sin placeholder text, solo contenido real y útil.
 `;
 
 //=============================================================================================================================
@@ -1806,39 +2034,33 @@ Responde con una frase corta y el archivo HTML completo:
                         ],
                     },
                 ],
-
-
-
-
-
-
-
-
-
-
-
-              //  generationConfig: {
-                //    temperature: 0.2,
-                //    topK: 50,
-                  //  topP: 0.9,
-                   // maxOutputTokens: 8000,
-
-
-
-                   generationConfig: {
-    temperature: TEMPERATURE,
-    topK: TOP_K,
-    topP: TOP_P,
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
-
-
-
-
-
-
-
-
+                generationConfig: {
+                    temperature: TEMPERATURE,
+                    topK: TOP_K,
+                    topP: TOP_P,
+                    maxOutputTokens: MAX_OUTPUT_TOKENS,
                 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             }),
         });
 
@@ -1937,14 +2159,74 @@ async function generateChatResponse(prompt) {
     }
 
     let userInfoText = '';
-    if (userInfo && (userInfo.name || userInfo.birth || userInfo.email || userInfo.custom)) {
+    if (userInfo && (userInfo.name || userInfo.birth || userInfo.email || userInfo.custom || userInfo.aiResponseStyle || userInfo.detailLevel || userInfo.projectType || userInfo.codeStylePrefs)) {
         userInfoText = [
             userInfo.name ? `Nombre: ${userInfo.name}` : '',
             userInfo.birth ? `Fecha de nacimiento: ${userInfo.birth}` : '',
             userInfo.email ? `Correo: ${userInfo.email}` : '',
-            userInfo.custom ? `Información personalizada: ${userInfo.custom}` : ''
+            userInfo.custom ? `Información personalizada: ${userInfo.custom}` : '',
+            '',
+            '=== CONFIGURACIONES DE IA ===',
+            userInfo.aiResponseStyle ? `Estilo de respuesta preferido: ${userInfo.aiResponseStyle}` : '',
+            userInfo.detailLevel ? `Nivel de detalle: ${userInfo.detailLevel}` : '',
+            userInfo.projectType ? `Tipo de proyectos: ${userInfo.projectType}` : '',
+            userInfo.codeStylePrefs ? `Estilo de código: ${userInfo.codeStylePrefs}` : ''
         ].filter(Boolean).join('\n');
     }
+
+    // ============= ANÁLISIS INTELIGENTE Y MEMORIA CONTEXTUAL =================
+    const detectedLevel = intelligentAnalysis.detectUserLevel(prompt);
+    const detectedLanguage = intelligentAnalysis.extractCodeLanguage(prompt);
+    const detectedProjectType = intelligentAnalysis.detectProjectType(prompt);
+
+    // Actualizar memoria contextual
+    if (detectedLevel && detectedLevel !== 'intermediate') {
+        contextualMemory.userExpertise = detectedLevel;
+        contextualMemory.complexityLevel = detectedLevel;
+    }
+
+    if (detectedLanguage) {
+        contextualMemory.lastCodeLanguage = detectedLanguage;
+        if (!contextualMemory.userPreferences.languages) contextualMemory.userPreferences.languages = [];
+        if (!contextualMemory.userPreferences.languages.includes(detectedLanguage)) {
+            contextualMemory.userPreferences.languages.push(detectedLanguage);
+        }
+    }
+
+    if (detectedProjectType && detectedProjectType !== 'general') {
+        contextualMemory.projectContext = detectedProjectType;
+    }
+
+    // Detectar tema conversacional
+    const techKeywords = ['código', 'programación', 'algoritmo', 'debug', 'error', 'función'];
+    const designKeywords = ['diseño', 'interfaz', 'ui', 'ux', 'css', 'responsive'];
+    const architectureKeywords = ['arquitectura', 'patrón', 'estructura', 'escalabilidad'];
+
+    if (techKeywords.some(keyword => prompt.toLowerCase().includes(keyword))) {
+        contextualMemory.conversationTheme = 'programming';
+    } else if (designKeywords.some(keyword => prompt.toLowerCase().includes(keyword))) {
+        contextualMemory.conversationTheme = 'design';
+    } else if (architectureKeywords.some(keyword => prompt.toLowerCase().includes(keyword))) {
+        contextualMemory.conversationTheme = 'architecture';
+    }
+
+    contextualMemory.interactionPattern = 'chat';
+
+    // Preparar información contextual para el prompt
+    let contextualInfo = '';
+    if (contextualMemory.userExpertise && contextualMemory.userExpertise !== 'intermediate') {
+        contextualInfo += `**NIVEL DETECTADO:** ${contextualMemory.userExpertise.toUpperCase()}\n`;
+    }
+    if (contextualMemory.lastCodeLanguage) {
+        contextualInfo += `**LENGUAJE PRINCIPAL:** ${contextualMemory.lastCodeLanguage.toUpperCase()}\n`;
+    }
+    if (contextualMemory.projectContext && contextualMemory.projectContext !== 'general') {
+        contextualInfo += `**CONTEXTO:** ${contextualMemory.projectContext.toUpperCase()}\n`;
+    }
+    if (contextualMemory.conversationTheme) {
+        contextualInfo += `**ESPECIALIZACIÓN:** ${contextualMemory.conversationTheme.toUpperCase()}\n`;
+    }
+    // ========================================================================
 
 
 
@@ -1955,97 +2237,113 @@ async function generateChatResponse(prompt) {
 // No menciones nada sobre generar páginas web o aplicaciones web a menos que el usuario lo pida explícitamente.
 
     const systemPrompt = `
-Eres un asistente de IA TU NOMBRE ES DevCenterIA que responde normalmente a las preguntas del usuario. Responde de forma clara y concisa a cualquier pregunta o conversación general.
+Eres **DevCenter IA**, un asistente de IA EXTREMADAMENTE INTELIGENTE especializado en desarrollo, programación y tecnología. Tienes capacidades avanzadas de análisis, debugging y explicación técnica.
 
+## 🧠 CAPACIDADES PRINCIPALES
 
-MARKDOWN COMPLETO - USALO ACTIVAMENTE EN TUS RESPUESTAS:
-Tienes acceso completo a Markdown. USALO para hacer respuestas mas atractivas y organizadas:
+### **ANÁLISIS DE CÓDIGO AVANZADO**
+- Puedes analizar, explicar y optimizar cualquier código
+- Detectas errores, vulnerabilidades y mejoras de rendimiento  
+- Explicas algoritmos complejos paso a paso
+- Sugieres refactorizaciones y mejores prácticas
+- Revisas arquitectura de software y patrones de diseño
 
-TEXTO Y FORMATO:
-- **Texto en negrita** para conceptos importantes
-- *Texto en cursiva* para enfasis
-- ***Texto en negrita y cursiva*** para muy importante
-- ~~Texto tachado~~ para contenido eliminado
-- Codigo inline entre backticks para terminos tecnicos
-- Texto normal sin formato
+### **DEBUGGING INTELIGENTE**
+- Analizas errores y excepciones con precisión
+- Propones soluciones múltiples para cada problema
+- Explicas la causa raíz de bugs complejos
+- Guías en debugging paso a paso
+- Identificas problemas de lógica y flujo
 
-LISTAS Y ORGANIZACION:
-- Listas sin orden con guiones
-  - Elemento 1
-  - Elemento 2
-    - Sub-elemento A
-    - Sub-elemento B
-- Listas numeradas:
-  1. Primer punto
-  2. Segundo punto
-     1. Sub-punto 2.1
-     2. Sub-punto 2.2
+### **EXPLICACIONES TÉCNICAS EXPERTAS**
+- Simplificas conceptos complejos con analogías claras
+- Enseñas desde nivel básico hasta avanzado
+- Explicas frameworks, librerías y tecnologías
+- Compares ventajas/desventajas de diferentes approaches
+- Proporciono tutoriales estructurados y ejemplos prácticos
 
-LISTAS DE TAREAS:
-- [x] Tarea completada
-- [ ] Tarea pendiente
-- [x] Otra tarea terminada
-- [ ] Por hacer
+### **CONSULTORÍA DE DESARROLLO**
+- Recomiendo tecnologías y herramientas adecuadas
+- Ayudo con arquitectura de proyectos
+- Sugiero flujos de trabajo y metodologías
+- Asesoro sobre performance y escalabilidad
+- Guío en decisiones técnicas importantes
 
-TITULOS Y SECCIONES:
-# Titulo Principal (H1)
-## Titulo Secundario (H2)  
-### Subtitulo (H3)
-#### Seccion menor (H4)
+### **SOPORTE MULTI-LENGUAJE**
+- JavaScript/TypeScript, Python, Java, C#, PHP, Go, Rust
+- HTML5, CSS3, React, Vue, Angular, Node.js
+- Bases de datos: SQL, MongoDB, Redis
+- DevOps: Docker, Git, CI/CD, AWS, etc.
 
-ENLACES:
-- [Texto del enlace](https://ejemplo.com)
-- [Google](https://google.com)
-- Enlaces automaticos: https://github.com
+---
 
+## 📝 FORMATO DE RESPUESTAS MARKDOWN
 
-CODIGO:
-- Codigo inline: backticks con const variable = "valor"
-- Bloques de codigo con triple backticks:
-  - javascript, html, css, python, etc.
-  - function ejemplo() { return "Hola mundo"; }
+**SIEMPRE usa Markdown para respuestas organizadas y atractivas:**
 
-TABLAS:
-| Columna 1 | Columna 2 | Columna 3 |
-|-----------|-----------|-----------|
-| Dato A    | Dato B    | Dato C    |
-| Valor 1   | Valor 2   | Valor 3   |
+### **ESTRUCTURA BÁSICA**
+- **Texto en negrita** para conceptos clave
+- *Cursiva* para énfasis
+- \`código inline\` para términos técnicos
+- \`\`\`language\nBloque de código\n\`\`\`
 
-CITAS Y DESTACADOS:
-> Esta es una cita importante
-> que puede ocupar multiples lineas
+### **ORGANIZACIÓN AVANZADA**
+- Usa ## y ### para secciones
+- Listas numeradas para pasos secuenciales
+- Listas con viñetas para características
+- Tablas para comparaciones
+- > Citas para información importante
+- --- para separar secciones
 
-LINEAS HORIZONTALES:
-Usa --- para separar secciones
+### **CÓDIGO Y EJEMPLOS**
+- Incluye ejemplos prácticos con explicaciones
+- Comenta el código para mayor claridad
+- Muestra antes/después en refactorizaciones
+- Proporciona múltiples enfoques cuando sea útil
 
-INSTRUCCIONES OBLIGATORIAS:
-- SIEMPRE usa Markdown para organizar respuestas largas
-- Usa titulos ## y ### para estructurar informacion
-- Aplica **negritas** para conceptos importantes
-- Usa listas para enumerar caracteristicas o pasos
-- Incluye codigo inline para terminos tecnicos
-- Agrega enlaces utiles cuando sea relevante
-- Aplica > citas para destacar informacion clave
-- Usa tablas para comparar datos o caracteristicas
+---
 
+## 🎯 ANÁLISIS CONTEXTUAL INTELIGENTE
 
+**Basándome en el historial y contexto:**
+${historyText ? `
+### **CONVERSACIÓN PREVIA:**
+${historyText}
 
-IMAGENES (USA URLS REALES):
-![Imagen Grande](https://picsum.photos/400/300)
-![Imgen Chica](https://picsum.photos/100/100)
+*Analizo el contexto anterior para respuestas más precisas y coherentes.*
+` : '*Primera interacción - responderé de forma completa y detallada.*'}
 
+**Información del usuario disponible:**
+${userInfoText ? `
+### **PERFIL DEL USUARIO:**
+${userInfoText}
 
-INFORMACIÓN DADA POR EL USUARIO (solo utilízala si se ocupa):
-${userInfoText ? userInfoText : '(Sin información dada por el usuario)'}
-HISTORIAL DE MENSAJES:
-${historyText ? historyText : '(Sin historial previo)'}
-USUARIO SOLICITA: ${prompt}
-Responde de forma clara y concisa, sin generar código ni páginas web.
+*Personalizo mis respuestas según tu perfil y experiencia.*
+` : '*Sin información específica del usuario - responderé de forma general pero completa.*'}
 
+${contextualInfo ? `
+### **🧠 ANÁLISIS INTELIGENTE ACTIVADO:**
+${contextualInfo}
+*Utilizo esta información para personalizar mi respuesta con máxima precisión.*
+` : ''}
 
+---
 
+## 🚀 PETICIÓN ACTUAL
+**SOLICITUD:** ${prompt}
 
-`;
+### **METODOLOGÍA DE RESPUESTA:**
+1. **Analizo** la pregunta en profundidad
+2. **Identifico** el nivel técnico requerido
+3. **Estructuro** la respuesta de forma lógica
+4. **Proporciono** ejemplos prácticos
+5. **Sugiero** próximos pasos o mejoras
+
+**IMPORTANTE:** No menciono generación de páginas web a menos que sea explícitamente solicitado.
+
+---
+
+*Respuesta optimizada con análisis técnico profundo, ejemplos prácticos y soluciones múltiples.*`;
 
 
 
@@ -2075,37 +2373,22 @@ Responde de forma clara y concisa, sin generar código ni páginas web.
                         ],
                     },
                 ],
-
-
-
-             //   generationConfig: {
-               //     temperature: 0.7,
-               //    topK: 50,
-               //     topP: 0.9,
-               //     maxOutputTokens: 18000,
-
-
-
-
-
-
-
-generationConfig: {
-    temperature: TEMPERATURE,
-    topK: TOP_K,
-    topP: TOP_P,
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
-
-
-
-
-
-
-
-
-
-
+                generationConfig: {
+                    temperature: TEMPERATURE,
+                    topK: TOP_K,
+                    topP: TOP_P,
+                    maxOutputTokens: MAX_OUTPUT_TOKENS,
                 }
+
+
+
+
+
+
+
+
+
+
             }),
         });
 
@@ -2199,18 +2482,11 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
-
-
-
-
-
-
-
-
 // Loading Mejorado
 // Variables para animación de loading
 let loadingInterval = null;
 let dotInterval = null;
+
 const loadingTexts = [
   "Cargando",
   "Pensando",
@@ -2223,28 +2499,6 @@ const loadingTexts = [
   "Estudiando",
   "Respondiendo"
 ];
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 function showLoading() {
@@ -2315,7 +2569,7 @@ function escapeHtml(text) {
 
 function renderMarkdown(text) {
     if (!text) return '';
-    
+
     let html = text.toString();
 
     // PASO 1: Procesar código (sin protección compleja)
@@ -2331,18 +2585,18 @@ function renderMarkdown(text) {
 
     // Paso temporal: marcar URLs de imagen para procesamiento posterior
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'heic', 'heif', 'svg', 'eps', 'pdf', 'ico', 'apng', 'jfif', 'pjpeg'];
-    
+
     imageExtensions.forEach(ext => {
         const imageUrlPattern = new RegExp(`(https://[^\\s<>"'\\[\\]()\\n\\r]+\\.${ext})`, 'gi');
         html = html.replace(imageUrlPattern, (match) => {
-            return `__IMAGEN_AUTO_${Buffer.from(match).toString('base64')}_IMAGEN_AUTO__`;
+            return `__IMAGEN_AUTO_${btoa(match)}_IMAGEN_AUTO__`;
         });
     });
 
     // PASO 2: Escapar HTML restante (después del código)
     const tempDiv = document.createElement('div');
     const parts = html.split(/(<pre><code>[\s\S]*?<\/code><\/pre>|<code>.*?<\/code>|__IMAGEN_AUTO_[A-Za-z0-9+/=]+_IMAGEN_AUTO__)/);
-    
+
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
         if (!part.startsWith('<pre><code>') && !part.startsWith('<code>') && !part.startsWith('__IMAGEN_AUTO_')) {
@@ -2353,7 +2607,7 @@ function renderMarkdown(text) {
     html = parts.join('');
 
     // PASO 3: Procesar elementos de Markdown
-    
+
     // Líneas horizontales PRIMERO
     html = html.replace(/^(---|___)\s*$/gim, '<hr>');
     html = html.replace(/^\*\*\*\s*$/gim, '<hr>');
@@ -2363,7 +2617,7 @@ function renderMarkdown(text) {
     // Enlaces e imágenes de Markdown  
     html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
     html = html.replace(/\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    
+
     // Encabezados
     html = html.replace(/^######\s+(.*$)/gim, '<h6>$1</h6>');
     html = html.replace(/^#####\s+(.*$)/gim, '<h5>$1</h5>');
@@ -2391,7 +2645,7 @@ function renderMarkdown(text) {
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        
+
         if (/^[\-\*]\s+/.test(line)) {
             // Lista desordenada
             if (listStack.length === 0 || listStack[listStack.length - 1] !== 'ul') {
@@ -2441,12 +2695,12 @@ function renderMarkdown(text) {
     const finalBlocks = blocks.map(block => {
         block = block.trim();
         if (!block) return '';
-        
+
         // No envolver elementos de bloque
         if (/^<(h[1-6]|blockquote|ul|ol|pre|hr|div)/.test(block)) {
             return block.replace(/\n/g, '<br>');
         }
-        
+
         // Envolver texto en párrafos
         return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
     });
@@ -2654,18 +2908,7 @@ function deleteChat(chatId) {
     }
 }
 
-// --- Corrige setUserInfoForm para evitar errores si los elementos no existen ---
-function setUserInfoForm() {
-    if (!userInfo) return;
-    const name = document.getElementById('userName');
-    const birth = document.getElementById('userBirth');
-    const email = document.getElementById('userEmail');
-    const custom = document.getElementById('userCustom');
-    if (name) name.value = userInfo.name || '';
-    if (birth) birth.value = userInfo.birth || '';
-    if (email) email.value = userInfo.email || '';
-    if (custom) custom.value = userInfo.custom || '';
-}
+// Función duplicada eliminada - usando la función original arriba
 
 // --- Corrige showPreview para evitar errores si el iframe no existe ---
 function showPreview(messageId) {
@@ -2681,5 +2924,298 @@ function showPreview(messageId) {
     window.currentCode = message.generatedCode;
 }
 
-// Función duplicada eliminada - funcionalidad movida a sendMessage principal
+// =================== FUNCIONES DE BOTONES DE ACCIÓN DE MENSAJES ===================
+
+// Función para copiar mensaje al portapapeles
+async function copyMessage(messageId) {
+    const chat = getCurrentChat();
+    if (!chat) return;
+
+    const message = chat.messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    try {
+        // Convertir markdown a texto plano para copiar
+        const textContent = message.content.replace(/\*\*(.*?)\*\*/g, '$1') // Negritas
+                                          .replace(/\*(.*?)\*/g, '$1')     // Cursivas
+                                          .replace(/`(.*?)`/g, '$1')       // Código inline
+                                          .replace(/```[\s\S]*?```/g, '[Código]') // Bloques de código
+                                          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Enlaces
+                                          .replace(/#+\s/g, '')            // Títulos
+                                          .replace(/\n\s*\n/g, '\n')       // Espacios extra
+                                          .trim();
+
+        await navigator.clipboard.writeText(textContent);
+
+        // Feedback visual
+        const button = document.querySelector(`[onclick="copyMessage('${messageId}')"]`);
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+            `;
+            button.style.color = '#22c55e';
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.style.color = '';
+            }, 1500);
+        }
+    } catch (error) {
+        console.error('Error copiando mensaje:', error);
+        alert('No se pudo copiar el mensaje');
+    }
+}
+
+// Función para compartir mensaje
+async function shareMessage(messageId) {
+    const chat = getCurrentChat();
+    if (!chat) return;
+
+    const message = chat.messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    try {
+        // Convertir markdown a texto plano para compartir
+        const textContent = message.content.replace(/\*\*(.*?)\*\*/g, '$1')
+                                          .replace(/\*(.*?)\*/g, '$1')
+                                          .replace(/`(.*?)`/g, '$1')
+                                          .replace(/```[\s\S]*?```/g, '[Código]')
+                                          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                                          .replace(/#+\s/g, '')
+                                          .replace(/\n\s*\n/g, '\n')
+                                          .trim();
+
+        const shareText = `Respuesta de DevCenter IA:\n\n${textContent}\n\n--- Generado con DevCenter IA ---`;
+
+        if (navigator.share) {
+            await navigator.share({
+                title: 'Respuesta de DevCenter IA',
+                text: shareText
+            });
+        } else {
+            // Fallback: copiar al portapapeles
+            await navigator.clipboard.writeText(shareText);
+            alert('Texto copiado al portapapeles para compartir');
+        }
+
+        // Feedback visual
+        const button = document.querySelector(`[onclick="shareMessage('${messageId}')"]`);
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+            `;
+            button.style.color = '#3b82f6';
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.style.color = '';
+            }, 1500);
+        }
+    } catch (error) {
+        console.error('Error compartiendo mensaje:', error);
+        alert('No se pudo compartir el mensaje');
+    }
+}
+
+// Función para escuchar mensaje (text-to-speech)
+async function listenMessage(messageId) {
+    const chat = getCurrentChat();
+    if (!chat) return;
+
+    const message = chat.messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    try {
+        // Verificar soporte de speech synthesis
+        if (!('speechSynthesis' in window)) {
+            alert('Tu navegador no soporta la síntesis de voz');
+            return;
+        }
+
+        const button = document.querySelector(`[onclick="listenMessage('${messageId}')"]`);
+        if (!button) return;
+
+        // Si ya está reproduciendo este mensaje, detener
+        if (currentSpeakingMessageId === messageId && currentUtterance) {
+            window.speechSynthesis.cancel();
+            currentSpeakingMessageId = null;
+            currentUtterance = null;
+            
+            // Restaurar botón a estado original (escuchar)
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <path d="M12 19v4"></path>
+                    <path d="M8 23h8"></path>
+                </svg>
+            `;
+            button.style.color = '';
+            return;
+        }
+
+        // Parar cualquier reproducción de otros mensajes
+        if (currentSpeakingMessageId && currentSpeakingMessageId !== messageId) {
+            window.speechSynthesis.cancel();
+            // Restaurar botón del mensaje anterior
+            const prevButton = document.querySelector(`[onclick="listenMessage('${currentSpeakingMessageId}')"]`);
+            if (prevButton) {
+                prevButton.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <path d="M12 19v4"></path>
+                        <path d="M8 23h8"></path>
+                    </svg>
+                `;
+                prevButton.style.color = '';
+            }
+        }
+
+        // Convertir markdown a texto plano para lectura
+        const textToSpeak = message.content.replace(/\*\*(.*?)\*\*/g, '$1')
+                                          .replace(/\*(.*?)\*/g, '$1')
+                                          .replace(/`(.*?)`/g, '$1')
+                                          .replace(/```[\s\S]*?```/g, 'Código de programación')
+                                          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                                          .replace(/#+\s/g, '')
+                                          .replace(/\n\s*\n/g, '. ')
+                                          .replace(/\n/g, '. ')
+                                          .trim();
+
+        if (!textToSpeak) {
+            alert('No hay texto para reproducir');
+            return;
+        }
+
+        // Crear utterance
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'es-ES';
+        utterance.rate = 1.2;
+        utterance.pitch = 1.1;
+        utterance.volume = 1.4;
+
+        // Actualizar estado global
+        currentSpeakingMessageId = messageId;
+        currentUtterance = utterance;
+
+        // 🔹 Función para mostrar/ocultar el botón de stop
+        function toggleStopButton(button) {
+            if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+                button.style.display = "inline-block"; // mostrar si hay algo hablando
+            } else {
+                button.style.display = "none"; // ocultar si no hay nada
+            }
+        }
+
+        // Cambiar botón a "parar"
+        button.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        `;
+        button.style.color = '#ef4444';
+
+        // 🔹 mostrar stop al iniciar
+        toggleStopButton(button);
+
+        // Manejar eventos de finalización
+        utterance.onend = () => {
+            currentSpeakingMessageId = null;
+            currentUtterance = null;
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <path d="M12 19v4"></path>
+                    <path d="M8 23h8"></path>
+                </svg>
+            `;
+            button.style.color = '';
+
+            // 🔹 ocultar stop al terminar
+            toggleStopButton(button);
+        };
+
+        utterance.onerror = (event) => {
+            currentSpeakingMessageId = null;
+            currentUtterance = null;
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <path d="M12 19v4"></path>
+                    <path d="M8 23h8"></path>
+                </svg>
+            `;
+            button.style.color = '';
+            console.error('Error en síntesis de voz:', event.error || event.type || 'Error desconocido');
+
+            // 🔹 ocultar stop si hubo error
+            toggleStopButton(button);
+        };
+
+        // Reproducir
+        window.speechSynthesis.speak(utterance);
+
+        // 🔹 asegurar estado inicial correcto
+        toggleStopButton(button);
+
+        } catch (error) {
+            console.error('Error reproduciendo mensaje:', error);
+
+            // Limpiar estado en caso de error
+            currentSpeakingMessageId = null;
+            currentUtterance = null;
+
+            // 🔹 ocultar stop en caso de fallo
+            toggleStopButton(button);
+        }
+        }
+
+        // Función global para detener la reproducción de voz
+        window.stopSpeech = function(button) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+
+                // 🔹 ocultar stop cuando se cancela manualmente
+                toggleStopButton(button);
+
+
+
+
+           
+
+            }
+ }
+
+
+
+
+
+// Función global para detener la reproducción de voz
+window.stopSpeech = function() {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+}
+
+// 🚨 Nuevo: Detener cualquier voz cuando se recargue o cierre la página
+window.addEventListener("beforeunload", () => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+});
+
+// 🚨 Opcional: También detener por si al cargar aún hay voces pendientes
+window.addEventListener("load", () => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+});
 
