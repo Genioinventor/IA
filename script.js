@@ -14,7 +14,7 @@ const AVISO_DESCRIPCION =
     
     ;
 
-const AVISO_VECES_MOSTRADAS = 0; // <--- Cuántas veces se mostrará el aviso al usuario (0 = infinitas veces)
+const AVISO_VECES_MOSTRADAS = 4; // <--- Cuántas veces se mostrará el aviso al usuario (0 = infinitas veces)
 // ===========================================================================
 
 // ================= CONFIGURACIÓN DE GENERACIÓN INTELIGENTE ================
