@@ -7,7 +7,7 @@ const RESET_LIMIT_MINUTES = 30; // Tiempo en minutos para restablecer el límite
 
 // ======================== SISTEMA DE AVISOS ===============================
 const AVISO_ACTIVO = true; // <--- Cambia a true para mostrar el aviso
-const AVISO_TITULO = "    ¡DevCenter 4.1!"; // <--- Título del aviso
+const AVISO_TITULO = "¡DevCenter 4.1!"; // <--- Título del aviso
 const AVISO_DESCRIPCION =
 "Esta actualización corrige errores y mejora la generación de páginas web, ajustando el diseño automáticamente al tema claro u oscuro del dispositivo."
     
